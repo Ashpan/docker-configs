@@ -1,0 +1,9 @@
+services:
+  volleybot:
+    container_name: volleybot
+    image: ashpan/volleybot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    restart: unless-stopped

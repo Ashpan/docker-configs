@@ -1,0 +1,15 @@
+name: glances
+services:
+    glances:
+      container_name: glances
+      restart: always
+      ports:
+          - 61208-61209:61208-61209
+      environment:
+          - GLANCES_OPT=-w
+          - TZ=America/Toronto
+      volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro
+          - /run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:ro
+      pid: host
+      image: nicolargo/glances:latest

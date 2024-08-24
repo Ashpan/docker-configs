@@ -1,0 +1,9 @@
+services:
+  chat:
+    image: m1k1o/chat:latest
+    container_name: chat
+    restart: unless-stopped
+    ports:
+      - 3002:80
+    environment:
+      CACHE_SIZE: 50 # optional: message count stored. Defaults to zero.

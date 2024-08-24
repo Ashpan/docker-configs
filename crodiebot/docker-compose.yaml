@@ -1,0 +1,5 @@
+services:
+  volleybot:
+    container_name: crodiebot
+    image: ashpan/crodiebot
+    restart: unless-stopped

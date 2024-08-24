@@ -1,0 +1,149 @@
+services:
+  vpn:
+    container_name: vpn
+    image: dperson/openvpn-client
+    # cap_add, security_opt, and volume required for the image to function
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      TZ: 'EST5EDT'
+    networks:
+      - default
+    # if using '-d' or 'DNS' you can't enable the `read_only: true` option
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+    restart: unless-stopped
+    security_opt:
+      - label:disable
+    stdin_open: true
+    tty: true
+    volumes:
+      - /dev/net:/dev/net:z
+      - /home/ashpan/docker/media_server/config/vpn:/vpn
+    # Put .ovpn configuration file in the /vpn directory (in "volumes:" above or
+    # launch using the command line arguments, IE pick one:
+    #  - ./vpn:/vpn
+    # command: 'server;user;password[;port]'
+    ports:
+      - 8112:8112 # port for deluge web UI to be reachable from local network
+      - 58846:58846 # deluge daemon?
+      - 8989:8989 # sonarr
+      - 7878:7878 # radarr
+      - 9696:9696 # prowlarr
+      - 8191:8191
+      - 5055:5055 #jellyseer
+      - 6767:6767
+
+  deluge:
+    container_name: deluge
+    image: lscr.io/linuxserver/deluge:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - DELUGE_LOGLEVEL=error #optional
+    restart: unless-stopped
+    volumes:
+      - /home/ashpan/docker/media_server/config/deluge:/config
+      - /home/ashpan/download:/download
+      - /home/ashpan/hdd:/hdd
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+  # The torrent service would be available at http://localhost:8080/
+  # or anywhere inside of the local network http://192.168.68.xxx:8080
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+    volumes:
+      - /home/ashpan/docker/media_server/config/sonarr:/config
+      - /home/ashpan/download:/download
+      - /home/ashpan/hdd:/hdd
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+    volumes:
+      - /home/ashpan/docker/media_server/config/radarr:/config
+      - /home/ashpan/download:/download
+      - /home/ashpan/hdd:/hdd
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+    volumes:
+      - /home/ashpan/docker/media_server/config/prowlarr:/config
+      - /home/ashpan/download:/download
+      - /home/ashpan/hdd:/hdd
+    restart: unless-stopped
+
+  flaresolverr:
+    # DockerHub mirror flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=America/New_York
+    restart: unless-stopped
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=America/New_York
+      - PORT=5055 #optional
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+    volumes:
+      - /home/ashpan/docker/media_server/config/jellyseer:/app/config
+    restart: unless-stopped
+
+  bazarr:
+    image: hotio/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+    volumes:
+      - /home/ashpan/docker/media_server/config/bazarr:/config
+      - /home/ashpan/download:/download
+      - /home/ashpan/hdd:/hdd
+    restart: unless-stopped
