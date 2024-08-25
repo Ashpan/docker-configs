@@ -17,3 +17,24 @@ services:
     # Optional - may be necessary for docker healthcheck to pass if running in host network mode
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+
+  jellyfin-auto-collections:
+    image: ghcr.io/ghomashudson/jellyfin-auto-collections:latest
+    container_name: jellyfin-auto-collections
+    environment:
+      - CRONTAB=0 0 * * *
+      - TZ=America/New_York
+      - JELLYFIN_SERVER_URL=${JELLYFIN_SERVER_URL}
+      - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+      - JELLYFIN_USER_ID=${JELLYFIN_USER_ID}
+    volumes:
+      - /home/ashpan/docker/jellyfin/auto-collections-config:/app/config
+    restart: unless-stopped
+
+  wizarr:
+    container_name: wizarr
+    image: ghcr.io/wizarrrr/wizarr:latest
+    ports:
+      - 5690:5690
+    volumes:
+      - ./wizarr/database:/data/database
