@@ -1,0 +1,22 @@
+http:
+  routers:
+    nextcloud-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - chain-nextcloud@file
+      rule: "Host(`nextcloud.{{env "DOMAINNAME_1"}}`)"
+      service: nextcloud-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
+  services:
+    nextcloud-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "http://host.docker.internal:11000" # Use the host's IP address if Traefik runs outside the host network
+

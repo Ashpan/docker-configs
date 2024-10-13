@@ -1,5 +1,7 @@
-*.*
-*/*
-!.gitignore
-!docker-compose.yaml
-!run-all-docker.sh
+._.DS_Store
+configdata/**/**
+appdata/discord/**
+logs/*
+!logs
+secrets/*
+.env

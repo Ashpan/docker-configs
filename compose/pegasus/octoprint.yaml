@@ -1,0 +1,31 @@
+services:
+  octoprint:
+    image: octoprint/octoprint
+    container_name: octoprint
+    restart: unless-stopped
+    ports:
+      - 8090:80
+    # use `python -m serial.tools.miniterm` to see what the name is of the printer, this requires pyserial
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/video0:/dev/video0
+    #  - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      #  - octoprint:/octoprint
+      - $DOCKERDIR/configdata/octoprint:/octoprint
+    # uncomment the lines below to ensure camera streaming is enabled when
+    # you add a video device
+    environment:
+      - ENABLE_MJPG_STREAMER=true
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.octoprint-rtr.entrypoints=websecure"
+      - "traefik.http.routers.octoprint-rtr.rule=Host(`octoprint.$DOMAINNAME_1`)"
+      - "traefik.http.routers.octoprint-rtr.service=octoprint-svc"
+      - "traefik.http.services.octoprint-svc.loadbalancer.server.port=80"
+      - "traefik.http.routers.octoprint-rtr.middlewares=chain-no-auth@file"
+
+volumes:
+  octoprint:

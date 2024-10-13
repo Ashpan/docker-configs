@@ -1,0 +1,24 @@
+http:
+  routers:
+    amp-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - amp-middlewares-headers@file
+      rule: "Host(`games.{{env "DOMAINNAME_1"}}`)"
+      service: amp-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
+  services:
+    amp-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "http://host.docker.internal:8080" # Use the host's IP address if Traefik runs outside the host network
+    # amp-error-svc:
+    #   file:
+    #     directory: "/opt/cubecoders/amp/shared/WebRoot"

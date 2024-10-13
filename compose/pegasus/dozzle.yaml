@@ -1,0 +1,20 @@
+services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8087:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle-rtr.entrypoints=websecure"
+      - "traefik.http.routers.dozzle-rtr.rule=Host(`dozzle.$DOMAINNAME_1`)"
+      - "traefik.http.routers.dozzle-rtr.service=dozzle-svc"
+      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
+      - "traefik.http.routers.dozzle-rtr.middlewares=chain-basic-auth@file"

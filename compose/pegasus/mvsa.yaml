@@ -1,0 +1,22 @@
+name: discord
+services:
+  dcef:
+    restart: always
+    volumes:
+      - $DOCKERDIR/appdata/discord/data:/dcef/exports
+      - $DOCKERDIR/configdata/discord/cache:/dcef/cache
+    container_name: discord
+    ports:
+      - 21011:21011
+    stdin_open: true
+    tty: true
+    image: slada/dcef:main
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.discord-rtr.entrypoints=websecure"
+      - "traefik.http.routers.discord-rtr.rule=Host(`discord.$DOMAINNAME_1`)"
+      - "traefik.http.routers.discord-rtr.service=discord-svc"
+      - "traefik.http.services.discord-svc.loadbalancer.server.port=21011"
+      - "traefik.http.routers.discord-rtr.middlewares=chain-no-auth@file"

@@ -1,0 +1,15 @@
+services:
+  cloudflare-ddns:
+    container_name: cloudflare-ddns
+    image: favonia/cloudflare-ddns:latest
+    network_mode: host
+    restart: always
+    user: "$PUID:$PGID"
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - DOMAINS=*.ashpanraskar.com
+      - PROXIED=true
+      - IP6_PROVIDER=none

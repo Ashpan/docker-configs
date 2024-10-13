@@ -1,0 +1,20 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - $DOCKERDIR/configdata/home-assistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    # networks:
+    #   - traefik_proxy
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.homeassistant-rtr.entrypoints=websecure"
+    #   - "traefik.http.routers.homeassistant-rtr.rule=Host(`home-assistant.$DOMAINNAME_1`)"
+    #   - "traefik.http.routers.homeassistant-rtr.service=homeassistant-svc"
+    #   - "traefik.http.services.homeassistant-svc.loadbalancer.server.port=8123"
+    #   - "traefik.http.routers.homeassistant-rtr.middlewares=chain-no-auth@file"

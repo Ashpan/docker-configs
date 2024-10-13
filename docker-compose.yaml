@@ -1,0 +1,55 @@
+########################### NETWORKS
+networks:
+  default:
+    driver: bridge
+  socket_proxy:
+    name: socket_proxy
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.91.0/24
+  traefik_proxy:
+    name: traefik_proxy
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.90.0/24
+
+########################### SECRETS
+secrets:
+  basic_auth_credentials:
+    file: $DOCKERDIR/secrets/basic_auth_credentials
+  cf_dns_api_token:
+    file: $DOCKERDIR/secrets/cf_dns_api_token
+
+include:
+  ########################### SERVICES
+  # HOSTNAME=pegasus - defined in .env
+
+  # CORE
+  - compose/$HOSTNAME/socket-proxy.yaml
+  - compose/$HOSTNAME/traefik.yaml
+  - compose/$HOSTNAME/adguard.yaml
+  - compose/$HOSTNAME/tailscale.yaml
+
+  # APPS
+  - compose/$HOSTNAME/dozzle.yaml
+  - compose/$HOSTNAME/media_server.yaml
+  - compose/$HOSTNAME/jellystat.yaml # need to merge into media server
+  - compose/$HOSTNAME/chat.yaml
+  - compose/$HOSTNAME/nextcloud.yaml
+  - compose/$HOSTNAME/home-assistant.yaml
+  - compose/$HOSTNAME/motioneye.yaml
+  - compose/$HOSTNAME/mvsa.yaml
+  - compose/$HOSTNAME/octoprint.yaml
+  - compose/$HOSTNAME/gpt.yaml
+  - compose/$HOSTNAME/your-spotify.yaml
+  - compose/$HOSTNAME/pastefy.yaml
+  - compose/$HOSTNAME/immich.yaml
+
+  # BOTS
+  - compose/$HOSTNAME/volleybot.yaml
+  - compose/$HOSTNAME/crodiebot.yaml
+
+  # TODO
+  # money, monitoring, watchtower?

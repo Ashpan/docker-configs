@@ -1,0 +1,22 @@
+name: motioneye
+services:
+  motioneye:
+    image: ccrisan/motioneye:master-amd64
+    container_name: motioneye
+    restart: always
+    ports:
+      - 8765:8765
+    hostname: motioneye
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/motioneye:/etc/motioneye
+      - /var/lib/motioneye:/var/lib/motioneye
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.motioneye-rtr.entrypoints=websecure"
+      - "traefik.http.routers.motioneye-rtr.rule=Host(`motioneye.$DOMAINNAME_1`)"
+      - "traefik.http.routers.motioneye-rtr.service=motioneye-svc"
+      - "traefik.http.services.motioneye-svc.loadbalancer.server.port=8765"
+      - "traefik.http.routers.motioneye-rtr.middlewares=chain-basic-auth@file"

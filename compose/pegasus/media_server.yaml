@@ -1,0 +1,308 @@
+services:
+  # ######################################################################
+  # # Bittorrent Client connected via VPN
+  # ######################################################################
+  qbittorrent:
+    container_name: qbittorrent
+    image: ghcr.io/hotio/qbittorrent
+    ports:
+      - "8180:8080"
+    restart: on-failure
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+      - WEBUI_PORTS=8080/tcp,8080/udp
+      - VPN_ENABLED=true
+      - VPN_CONF=wg0
+      - VPN_PROVIDER=generic
+      - VPN_LAN_NETWORK=192.168.68.0/24
+      - VPN_LAN_LEAK_ENABLED=false
+      - VPN_EXPOSE_PORTS_ON_LAN
+      - VPN_AUTO_PORT_FORWARD=false
+      - VPN_AUTO_PORT_FORWARD_TO_PORTS=
+      - VPN_KEEP_LOCAL_DNS=false
+      - VPN_FIREWALL_TYPE=auto
+      - VPN_HEALTHCHECK_ENABLED=true
+      - PRIVOXY_ENABLED=false
+      - UNBOUND_ENABLED=false
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+    volumes:
+      - $DOCKERDIR/configdata/qbittorrent:/config
+      - $DATADIR/Downloads:/downloads
+      - /home/ashpan/hdd:/hdd
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qbittorrent-rtr.entrypoints=websecure"
+      - "traefik.http.routers.qbittorrent-rtr.rule=Host(`torrent.$DOMAINNAME_1`)"
+      - "traefik.http.routers.qbittorrent-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.qbittorrent-rtr.service=qbittorrent-svc"
+      - "traefik.http.services.qbittorrent-svc.loadbalancer.server.port=8080"
+
+  # ######################################################################
+  # # Flaresolverr to pass cloudflare ddos protection
+  # ######################################################################
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=$TZ
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+
+  ######################################################################
+  # Prowlarr to manage indexers between the *arrs
+  ######################################################################
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+    volumes:
+      - $DOCKERDIR/configdata/prowlarr:/config
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prowlarr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.prowlarr-rtr.service=prowlarr-svc"
+      - "traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696"
+
+  # ######################################################################
+  # # Radarr to manage downloading movies
+  # ######################################################################
+  radarr:
+    container_name: radarr
+    image: ghcr.io/hotio/radarr
+    ports:
+      - "7878:7878"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+    volumes:
+      - $DOCKERDIR/configdata/radarr:/config
+      - $DATADIR:/nas
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.radarr-rtr.rule=Host(`radarr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.radarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.radarr-rtr.service=radarr-svc"
+      - "traefik.http.services.radarr-svc.loadbalancer.server.port=7878"
+
+  # ######################################################################
+  # # Sonarr to manage downloading tv shows
+  # ######################################################################
+  sonarr_tv:
+    container_name: sonarr_tv
+    image: ghcr.io/hotio/sonarr
+    privileged: true
+    ports:
+      - "8989:8989"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+    volumes:
+      - $DOCKERDIR/configdata/sonarr_tv:/config
+      - $DATADIR:/nas
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr_tv-rtr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr_tv-rtr.rule=Host(`sonarr-tv.$DOMAINNAME_1`)"
+      - "traefik.http.routers.sonarr_tv-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.sonarr_tv-rtr.service=sonarr_tv-svc"
+      - "traefik.http.services.sonarr_tv-svc.loadbalancer.server.port=8989"
+
+  # ######################################################################
+  # # Sonarr to manage downloading anime
+  # ######################################################################
+  sonarr_anime:
+    container_name: sonarr_anime
+    image: ghcr.io/hotio/sonarr
+    ports:
+      - "8990:8989"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+    volumes:
+      - $DOCKERDIR/configdata/sonarr_anime:/config
+      - $DATADIR:/nas
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr_anime-rtr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr_anime-rtr.rule=Host(`sonarr-anime.$DOMAINNAME_1`)"
+      - "traefik.http.routers.sonarr_anime-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.sonarr_anime-rtr.service=sonarr_anime-svc"
+      - "traefik.http.services.sonarr_anime-svc.loadbalancer.server.port=8989"
+
+  # ######################################################################
+  # # Jellyseerr to manage requesting media
+  # ######################################################################
+  jellyseerr:
+    container_name: jellyseerr
+    image: ghcr.io/hotio/jellyseerr
+    ports:
+      - "5055:5055"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+    volumes:
+      - $DOCKERDIR/configdata/jellyseerr:/config
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyseerr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.jellyseerr-rtr.rule=Host(`requests.$DOMAINNAME_1`)"
+      - "traefik.http.routers.jellyseerr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.jellyseerr-rtr.service=jellyseerr-svc"
+      - "traefik.http.services.jellyseerr-svc.loadbalancer.server.port=5055"
+
+  # ######################################################################
+  # # Bazarr to manage downloading subtitles
+  # ######################################################################
+  bazarr:
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr
+    ports:
+      - "6767:6767"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - UMASK=002
+      - TZ=$TZ
+      - WEBUI_PORTS=6767/tcp,6767/udp
+    volumes:
+      - $DOCKERDIR/configdata/bazarr:/config
+      - $DATADIR:/nas
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bazarr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.bazarr-rtr.rule=Host(`bazarr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.bazarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.bazarr-rtr.service=bazarr-svc"
+      - "traefik.http.services.bazarr-svc.loadbalancer.server.port=6767"
+
+  # # ######################################################################
+  # # # Organizr to manage media server services
+  # # ######################################################################
+  # # organizr:
+  # #   container_name: organizr
+  # #   image: organizr/organizr
+  # #   ports:
+  # #     - "8280:80"
+  # #   environment:
+  # #     - PUID=1000
+  # #     - PGID=1000
+  # #   volumes:
+  # #     - $DOCKERDIR/configdata/organizr:/config
+
+  ########################################################################
+  # # Jellyfin to host the media content
+  # ######################################################################
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    #    user: 1000:1000    # disabled to use intro skip plugin
+    networks:
+      - traefik_proxy
+    volumes:
+      - /home/ashpan/hdd/jellyfin_data/config:/config
+      - /home/ashpan/hdd/jellyfin_data/cache:/cache
+      - type: bind
+        source: /home/ashpan/hdd
+        target: /media
+      - type: bind
+        source: /mnt/pegasus
+        target: /nas
+    restart: "unless-stopped"
+    ports:
+      - "8096:8096"
+    # Optional - alternative address used for autodiscovery
+    environment:
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.ashpanraskar.com
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin-rtr.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin-rtr.rule=Host(`jellyfin.$DOMAINNAME_1`)"
+      - "traefik.http.routers.jellyfin-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.jellyfin-rtr.service=jellyfin-svc"
+      - "traefik.http.services.jellyfin-svc.loadbalancer.server.port=8096"
+
+  # #####################################################################
+  # # Jellyfin-auto-collections to create collections from IMDB lists
+  # #####################################################################
+  jellyfin-auto-collections:
+    image: ghcr.io/ghomashudson/jellyfin-auto-collections:latest
+    container_name: jellyfin-auto-collections
+    environment:
+      - CRONTAB=0 0 * * *
+      - TZ=$TZ
+      - JELLYFIN_SERVER_URL=${JELLYFIN_SERVER_URL}
+      - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+      - JELLYFIN_USER_ID=${JELLYFIN_USER_ID}
+    volumes:
+      - $DOCKERDIR/configdata/auto-collections:/app/config
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+
+  # ######################################################################
+  # # Wizarr to handle user management for jellyfin
+  # ######################################################################
+  wizarr:
+    container_name: wizarr
+    image: ghcr.io/wizarrrr/wizarr:latest
+    restart: unless-stopped
+    ports:
+      - 5690:5690
+    volumes:
+      - $DOCKERDIR/configdata/wizarr/database:/data/database
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wizarr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.wizarr-rtr.rule=Host(`wizarr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.wizarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.wizarr-rtr.service=wizarr-svc"
+      - "traefik.http.services.wizarr-svc.loadbalancer.server.port=5690"
