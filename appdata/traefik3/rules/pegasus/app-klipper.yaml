@@ -1,0 +1,22 @@
+http:
+  routers:
+    klipper-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - chain-authelia@file
+      rule: "Host(`klipper.{{env "DOMAINNAME_1"}}`)"
+      service: klipper-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
+  services:
+    klipper-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "http://192.168.68.248" # Use the host's IP address if Traefik runs outside the host network
+

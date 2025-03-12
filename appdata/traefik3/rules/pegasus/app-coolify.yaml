@@ -1,0 +1,21 @@
+http:
+  routers:
+    coolify-rtr:
+      entrypoints:
+        - "websecure"
+          #middlewares:
+          #- chain-no-auth@file
+      rule: "Host(`coolify.{{env "DOMAINNAME_1"}}`)"
+      service: coolify-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
+  services:
+    coolify-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "http://coolify:8000" # Use the host's IP address if Traefik runs outside the host network

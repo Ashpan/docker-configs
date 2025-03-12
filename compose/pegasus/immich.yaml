@@ -22,7 +22,7 @@ services:
     env_file:
       - $DOCKERDIR/.env
     ports:
-      - 2283:3001
+      - 2283:2283
     depends_on:
       - redis
       - database
@@ -36,7 +36,7 @@ services:
       - "traefik.http.routers.photos-rtr.entrypoints=websecure"
       - "traefik.http.routers.photos-rtr.rule=Host(`photos.$DOMAINNAME_1`)"
       - "traefik.http.routers.photos-rtr.service=photos-svc"
-      - "traefik.http.services.photos-svc.loadbalancer.server.port=3001"
+      - "traefik.http.services.photos-svc.loadbalancer.server.port=2283"
       - "traefik.http.routers.photos-rtr.middlewares=chain-no-auth@file"
 
   immich-machine-learning:

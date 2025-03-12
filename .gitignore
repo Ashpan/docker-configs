@@ -5,3 +5,6 @@ logs/*
 !logs
 secrets/*
 .env
+appdata/traefik3/acme/acme.json
+appdata/recyclarr/secrets.yml
+appdata/traefik3/rules/pegasus/tail

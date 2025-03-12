@@ -6,10 +6,9 @@ services:
     ports:
       - 8090:80
     # use `python -m serial.tools.miniterm` to see what the name is of the printer, this requires pyserial
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0
-      - /dev/video0:/dev/video0
-    #  - /dev/ttyACM0:/dev/ttyACM0
+    #devices:
+      #- /dev/video0:/dev/video0
+        #- /dev/ttyUSB0:/dev/ttyACM0
     volumes:
       #  - octoprint:/octoprint
       - $DOCKERDIR/configdata/octoprint:/octoprint

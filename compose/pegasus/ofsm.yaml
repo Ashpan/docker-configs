@@ -1,0 +1,9 @@
+name: ofsm
+services:
+    ofsm:
+        image: ofsm/ofsm:latest
+        container_name: ofsm
+        ports:
+            - 80:80
+            - 34197:34197/udp
+        

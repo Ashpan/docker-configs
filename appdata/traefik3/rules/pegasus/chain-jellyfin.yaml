@@ -1,0 +1,8 @@
+http:
+  middlewares:
+    chain-jellyfin:
+      chain:
+        middlewares:
+          - middlewares-rate-limit
+          # - middlewares-secure-headers
+          - middlewares-jellyfin

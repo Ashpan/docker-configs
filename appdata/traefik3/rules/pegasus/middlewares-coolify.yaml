@@ -1,0 +1,9 @@
+http:
+  middlewares:
+    coolify-middlewares-headers:
+      headers:
+        customRequestHeaders:
+          X-AMP-Scheme: "https"
+        customResponseHeaders:
+          X-Proxy-Buffering: "off"
+

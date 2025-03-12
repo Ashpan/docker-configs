@@ -42,7 +42,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.qbittorrent-rtr.entrypoints=websecure"
       - "traefik.http.routers.qbittorrent-rtr.rule=Host(`torrent.$DOMAINNAME_1`)"
-      - "traefik.http.routers.qbittorrent-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.qbittorrent-rtr.middlewares=chain-authelia@file"
       - "traefik.http.routers.qbittorrent-rtr.service=qbittorrent-svc"
       - "traefik.http.services.qbittorrent-svc.loadbalancer.server.port=8080"
 
@@ -84,7 +84,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.prowlarr-rtr.entrypoints=websecure"
       - "traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-authelia@file"
       - "traefik.http.routers.prowlarr-rtr.service=prowlarr-svc"
       - "traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696"
 
@@ -94,6 +94,7 @@ services:
   radarr:
     container_name: radarr
     image: ghcr.io/hotio/radarr
+    privileged: true
     ports:
       - "7878:7878"
     environment:
@@ -110,7 +111,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.radarr-rtr.entrypoints=websecure"
       - "traefik.http.routers.radarr-rtr.rule=Host(`radarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.radarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.radarr-rtr.middlewares=chain-authelia@file"
       - "traefik.http.routers.radarr-rtr.service=radarr-svc"
       - "traefik.http.services.radarr-svc.loadbalancer.server.port=7878"
 
@@ -136,36 +137,36 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sonarr_tv-rtr.entrypoints=websecure"
-      - "traefik.http.routers.sonarr_tv-rtr.rule=Host(`sonarr-tv.$DOMAINNAME_1`)"
-      - "traefik.http.routers.sonarr_tv-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.sonarr_tv-rtr.rule=Host(`sonarr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.sonarr_tv-rtr.middlewares=chain-authelia@file"
       - "traefik.http.routers.sonarr_tv-rtr.service=sonarr_tv-svc"
       - "traefik.http.services.sonarr_tv-svc.loadbalancer.server.port=8989"
 
-  # ######################################################################
-  # # Sonarr to manage downloading anime
-  # ######################################################################
-  sonarr_anime:
-    container_name: sonarr_anime
-    image: ghcr.io/hotio/sonarr
-    ports:
-      - "8990:8989"
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - UMASK=002
-      - TZ=$TZ
-    volumes:
-      - $DOCKERDIR/configdata/sonarr_anime:/config
-      - $DATADIR:/nas
-    networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.sonarr_anime-rtr.entrypoints=websecure"
-      - "traefik.http.routers.sonarr_anime-rtr.rule=Host(`sonarr-anime.$DOMAINNAME_1`)"
-      - "traefik.http.routers.sonarr_anime-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.sonarr_anime-rtr.service=sonarr_anime-svc"
-      - "traefik.http.services.sonarr_anime-svc.loadbalancer.server.port=8989"
+  # # ######################################################################
+  # # # Sonarr to manage downloading anime
+  # # ######################################################################
+  # sonarr_anime:
+  #   container_name: sonarr_anime
+  #   image: ghcr.io/hotio/sonarr
+  #   ports:
+  #     - "8990:8989"
+  #   environment:
+  #     - PUID=$PUID
+  #     - PGID=$PGID
+  #     - UMASK=002
+  #     - TZ=$TZ
+  #   volumes:
+  #     - $DOCKERDIR/configdata/sonarr_anime:/config
+  #     - $DATADIR:/nas
+  #   networks:
+  #     - traefik_proxy
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.sonarr_anime-rtr.entrypoints=websecure"
+  #     - "traefik.http.routers.sonarr_anime-rtr.rule=Host(`sonarr-anime.$DOMAINNAME_1`)"
+  #     - "traefik.http.routers.sonarr_anime-rtr.middlewares=chain-no-auth@file"
+  #     - "traefik.http.routers.sonarr_anime-rtr.service=sonarr_anime-svc"
+  #     - "traefik.http.services.sonarr_anime-svc.loadbalancer.server.port=8989"
 
   # ######################################################################
   # # Jellyseerr to manage requesting media
@@ -215,23 +216,46 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.bazarr-rtr.entrypoints=websecure"
       - "traefik.http.routers.bazarr-rtr.rule=Host(`bazarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.bazarr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.bazarr-rtr.middlewares=chain-authelia@file"
       - "traefik.http.routers.bazarr-rtr.service=bazarr-svc"
       - "traefik.http.services.bazarr-svc.loadbalancer.server.port=6767"
 
-  # # ######################################################################
-  # # # Organizr to manage media server services
-  # # ######################################################################
-  # # organizr:
-  # #   container_name: organizr
-  # #   image: organizr/organizr
-  # #   ports:
-  # #     - "8280:80"
-  # #   environment:
-  # #     - PUID=1000
-  # #     - PGID=1000
-  # #   volumes:
-  # #     - $DOCKERDIR/configdata/organizr:/config
+  # ######################################################################
+  # # Recyclarr to sync quality profiles between the *arrs
+  # ######################################################################
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr
+    container_name: recyclarr
+    user: $PUID:$PGID
+    networks:
+      - traefik_proxy
+    volumes:
+      - $DOCKERDIR/appdata/recyclarr:/config
+    environment:
+      - TZ=$TZ
+
+  # ######################################################################
+  # # Organizr to manage media server services
+  # ######################################################################
+  organizr:
+    container_name: organizr
+    image: organizr/organizr
+    ports:
+      - "8280:80"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+    volumes:
+      - $DOCKERDIR/configdata/organizr:/config
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.organizr-rtr.entrypoints=websecure"
+      - "traefik.http.routers.organizr-rtr.rule=Host(`organizr.$DOMAINNAME_1`)"
+      - "traefik.http.routers.organizr-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.organizr-rtr.service=organizr-svc"
+      - "traefik.http.services.organizr-svc.loadbalancer.server.port=80"
 
   ########################################################################
   # # Jellyfin to host the media content
@@ -254,9 +278,17 @@ services:
     restart: "unless-stopped"
     ports:
       - "8096:8096"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     # Optional - alternative address used for autodiscovery
     environment:
       - JELLYFIN_PublishedServerUrl=https://jellyfin.ashpanraskar.com
+        #      - HEALTHCHECK_URL=https://localhost:8096/health
     # Optional - may be necessary for docker healthcheck to pass if running in host network mode
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -264,7 +296,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin-rtr.entrypoints=websecure"
       - "traefik.http.routers.jellyfin-rtr.rule=Host(`jellyfin.$DOMAINNAME_1`)"
-      - "traefik.http.routers.jellyfin-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.organizr-rtr.middlewares=chain-no-auth@file"
       - "traefik.http.routers.jellyfin-rtr.service=jellyfin-svc"
       - "traefik.http.services.jellyfin-svc.loadbalancer.server.port=8096"
 

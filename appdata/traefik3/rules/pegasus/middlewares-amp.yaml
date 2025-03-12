@@ -6,6 +6,7 @@ http:
           X-AMP-Scheme: "https"
         customResponseHeaders:
           X-Proxy-Buffering: "off"
+          Content-Security-Policy: "frame-ancestors 'self' https://organizr.ashpanraskar.com;"
 
     #     accessControlMaxAge: 100
     #     hostsProxyHeaders:

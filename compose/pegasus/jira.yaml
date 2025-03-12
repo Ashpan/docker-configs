@@ -1,0 +1,22 @@
+name: jira
+services:
+  jira:
+    image: openproject/openproject:14
+    container_name: jira
+    ports:
+      - 8888:80
+    environment:
+      - OPENPROJECT_HOST__NAME=jira.ashpanraskar.com
+      - OPENPROJECT_SECRET_KEY_BASE=Cf53YT7GwmViKETRaBagJIR6yUbeLzjQ
+    volumes:
+      - $DOCKERDIR/configdata/jira/pgdata:/var/openproject/pgdata
+      - $DOCKERDIR/configdata/jira/assets:/var/openproject/assets
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jira-rtr.entrypoints=websecure"
+      - "traefik.http.routers.jira-rtr.rule=Host(`jira.$DOMAINNAME_1`)"
+      - "traefik.http.routers.jira-rtr.service=jira-svc"
+      - "traefik.http.services.jira-svc.loadbalancer.server.port=80"
+      - "traefik.http.routers.jira-rtr.middlewares=chain-no-auth@file"

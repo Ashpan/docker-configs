@@ -10,6 +10,16 @@ http:
       tls:
         certResolver: dns-cloudflare
         options: tls-opts@file
+    factorio-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - amp-middlewares-headers@file
+      rule: "Host(`factorio.{{env "DOMAINNAME_1"}}`)"
+      service: factorio-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
 
   services:
     amp-svc:
@@ -19,6 +29,13 @@ http:
           flushInterval: 100ms
         servers:
           - url: "http://host.docker.internal:8080" # Use the host's IP address if Traefik runs outside the host network
+    factorio-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "http://host.docker.internal:34197" # Use the host's IP address if Traefik runs outside the host network
     # amp-error-svc:
     #   file:
     #     directory: "/opt/cubecoders/amp/shared/WebRoot"

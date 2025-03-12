@@ -1,0 +1,22 @@
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows
+    environment:
+      VERSION: "7e"
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    stop_grace_period: 2m
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.windows-rtr.entrypoints=websecure"
+      - "traefik.http.routers.windows-rtr.rule=Host(`windows.$DOMAINNAME_1`)"
+      - "traefik.http.routers.windows-rtr.service=windows-svc"
+      - "traefik.http.services.windows-svc.loadbalancer.server.port=8006"
+      - "traefik.http.routers.windows-rtr.middlewares=chain-authelia@file"
