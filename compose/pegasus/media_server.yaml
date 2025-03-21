@@ -288,8 +288,12 @@ services:
     # Optional - alternative address used for autodiscovery
     environment:
       - JELLYFIN_PublishedServerUrl=https://jellyfin.ashpanraskar.com
-        #      - HEALTHCHECK_URL=https://localhost:8096/health
     # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:

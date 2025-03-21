@@ -1,0 +1,33 @@
+services:
+  gh-rdme-streak:
+    container_name: github-readme-streak
+    image: ashpan/gh-rdme-streak
+    environment:
+      - TOKEN=$GH_PAT
+    ports:
+      - 8002:8000
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gh-streak-rtr.entrypoints=websecure"
+      - "traefik.http.routers.gh-streak-rtr.rule=Host(`gh-streak.$DOMAINNAME_1`)"
+      - "traefik.http.routers.gh-streak-rtr.service=gh-streak-svc"
+      - "traefik.http.services.gh-streak-svc.loadbalancer.server.port=8000"
+      - "traefik.http.routers.gh-streak-rtr.middlewares=chain-no-auth@file"
+  gh-rdme-stats:
+    container_name: github-readme-stats
+    image: ashpan/gh-rdme-stats:latest
+    environment:
+      - PAT_1=$GH_PAT
+    ports:
+      - 9009:9000
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gh-stats-rtr.entrypoints=websecure"
+      - "traefik.http.routers.gh-stats-rtr.rule=Host(`gh-stats.$DOMAINNAME_1`)"
+      - "traefik.http.routers.gh-stats-rtr.service=gh-stats-svc"
+      - "traefik.http.services.gh-stats-svc.loadbalancer.server.port=9000"
+      - "traefik.http.routers.gh-stats-rtr.middlewares=chain-no-auth@file"

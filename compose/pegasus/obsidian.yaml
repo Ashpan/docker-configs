@@ -1,0 +1,25 @@
+services:
+  couchdb-obsidian-livesync:
+    container_name: obsidian-livesync #shortened name
+    image: couchdb:3.3.3
+    environment:
+      - PUID=99
+      - PGID=100
+      - UMASK=0022
+      - TZ=America/New_York
+      - COUCHDB_USER=obsidian_user
+      - COUCHDB_PASSWORD=4Cl9oOAYeX7HuQ
+    volumes:
+      - /mnt/user/appdata/couchdb-obsidian-livesync/data:/mnt/pegasus/Obsidian/data
+      - /mnt/user/appdata/couchdb-obsidian-livesync/etc/local.d:/opt/couchdb/etc/local.d
+    networks:
+      - traefik_proxy
+    ports:
+      - "5984:5984"
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.couchdb-rtr.entrypoints=websecure"
+      - "traefik.http.routers.couchdb-rtr.rule=Host(`couchdb.$DOMAINNAME_1`)"
+      - "traefik.http.routers.couchdb-rtr.service=couchdb-svc"
+      - "traefik.http.services.couchdb-svc.loadbalancer.server.port=5984"

@@ -38,6 +38,8 @@ include:
   - compose/$HOSTNAME/socket-proxy.yaml
   - compose/$HOSTNAME/tailscale.yaml
   - compose/$HOSTNAME/traefik.yaml
+  - compose/$HOSTNAME/watchtower.yaml
+  - compose/$HOSTNAME/portainer.yaml
 
   # APPS
   - compose/$HOSTNAME/chat.yaml
@@ -56,6 +58,9 @@ include:
   - compose/$HOSTNAME/your-spotify.yaml
   - compose/$HOSTNAME/jira.yaml
   - compose/$HOSTNAME/pdf.yaml
+  - compose/$HOSTNAME/obsidian.yaml
+  - compose/$HOSTNAME/github-readme.yaml
+  - compose/$HOSTNAME/files.yaml
     #  - compose/$HOSTNAME/lynx.yaml
     # - compose/$HOSTNAME/windows.yaml
   # BOTS

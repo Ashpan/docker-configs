@@ -1,0 +1,18 @@
+name: file-server
+services:
+  static-file-server:
+    container_name: file-server
+    volumes:
+      - $DOCKERDIR/appdata/file-server/data:/web
+    ports:
+      - 8099:8080
+    image: halverneus/static-file-server:latest
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.files-rtr.entrypoints=websecure"
+      - "traefik.http.routers.files-rtr.rule=Host(`files.$DOMAINNAME_1`)"
+      - "traefik.http.routers.files-rtr.service=files-svc"
+      - "traefik.http.services.files-svc.loadbalancer.server.port=8080"
+      - "traefik.http.routers.files-rtr.middlewares=chain-no-auth@file"
