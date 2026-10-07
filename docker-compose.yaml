@@ -55,7 +55,6 @@ include:
     # - compose/$HOSTNAME/motioneye.yaml
   - compose/$HOSTNAME/mvsa.yaml
   - compose/$HOSTNAME/nextcloud.yaml
-    # - compose/$HOSTNAME/octoprint.yaml
   - compose/$HOSTNAME/pastefy.yaml
   - compose/$HOSTNAME/your-spotify.yaml
     # - compose/$HOSTNAME/jira.yaml
