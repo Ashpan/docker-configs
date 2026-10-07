@@ -3,18 +3,20 @@ services:
     container_name: dozzle
     image: amir20/dozzle:latest
     networks:
-      - traefik_proxy
+      - caddy_proxy
       - socket_proxy
     environment:
       DOCKER_HOST: tcp://socket-proxy:2375
+      DOZZLE_AUTH_PROVIDER: forward-proxy
+      DOZZLE_AUTH_HEADER_USER: X-Authentik-Username
+      DOZZLE_AUTH_HEADER_EMAIL: X-Authentik-Email
+      DOZZLE_AUTH_HEADER_NAME: X-Authentik-Name
+      DOZZLE_AUTH_LOGOUT_URL: https://auth.ashpanraskar.com/application/o/dozzle/end-session/      
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 8087:8080
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dozzle-rtr.entrypoints=websecure"
-      - "traefik.http.routers.dozzle-rtr.rule=Host(`dozzle.$DOMAINNAME_1`)"
-      - "traefik.http.routers.dozzle-rtr.service=dozzle-svc"
-      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.dozzle-rtr.middlewares=chain-authelia@file"
+    restart: unless-stopped
+networks:
+  caddy_proxy:
+    external: true

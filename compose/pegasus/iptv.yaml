@@ -1,0 +1,37 @@
+services:
+  iptv-proxy:
+    image: openresty/openresty:alpine
+    container_name: iptv-proxy
+    restart: unless-stopped
+    volumes:
+      - $DOCKERDIR/configdata/iptv-proxy/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - $DOCKERDIR/configdata/iptv-proxy/entrypoint.sh:/entrypoint.sh:ro
+      - $DOCKERDIR/configdata/iptv-proxy/iptv.env:/config/iptv.env:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    networks:
+      - caddy_proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  iptv-admin:
+    image: node:20-alpine
+    container_name: iptv-admin
+    restart: unless-stopped
+    working_dir: /app
+    command: ["sh", "-c", "npm install --omit=dev && node server.js"]
+    volumes:
+      - $DOCKERDIR/configdata/iptv-admin:/app
+      - $DOCKERDIR/configdata/iptv-proxy/iptv.env:/app/iptv.env
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - caddy_proxy
+    depends_on:
+      - iptv-proxy
+
+networks:
+  caddy_proxy:
+    external: true

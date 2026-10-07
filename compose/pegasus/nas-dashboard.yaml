@@ -1,0 +1,24 @@
+services:
+  nas-dashboard:
+    container_name: nas-dashboard
+    build:
+      context: $DOCKERDIR/apps/nas-dashboard
+    environment:
+      - SCAN_ROOT=/nas
+      - CACHE_PATH=/data/cache.json
+      - SCAN_INTERVAL_HOURS=12
+      - MAX_DEPTH=6
+      - QBT_BACKUP_DIR=/qbt-backup
+      - COMPLETED_DIR=/nas/Downloads/completed
+    volumes:
+      - $DATADIR:/nas:ro
+      - $DOCKERDIR/appdata/nas-dashboard:/data
+      - $DOCKERDIR/configdata/qbittorrent/data/BT_backup:/qbt-backup:ro
+    ports:
+      - 8085:5000
+    networks:
+      - caddy_proxy
+    restart: unless-stopped
+networks:
+  caddy_proxy:
+    external: true

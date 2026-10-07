@@ -4,13 +4,14 @@ services:
     image: openproject/openproject:14
     container_name: jira
     ports:
-      - 8888:80
+      - 8898:80
     environment:
       - OPENPROJECT_HOST__NAME=jira.ashpanraskar.com
-      - OPENPROJECT_SECRET_KEY_BASE=Cf53YT7GwmViKETRaBagJIR6yUbeLzjQ
+      - OPENPROJECT_SECRET_KEY_BASE=$OPENPROJECT_SECRET_KEY_BASE
     volumes:
       - $DOCKERDIR/configdata/jira/pgdata:/var/openproject/pgdata
       - $DOCKERDIR/configdata/jira/assets:/var/openproject/assets
+    restart: unless-stopped
     networks:
       - traefik_proxy
     labels:

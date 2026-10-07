@@ -1,5 +1,5 @@
 services:
-  server:
+  your_spotify_server:
     container_name: your_spotify_server
     image: yooooomi/your_spotify_server
     restart: always
@@ -16,16 +16,17 @@ services:
       SPOTIFY_SECRET: $SPOTIFY_SECRET
       CORS: i-want-a-security-vulnerability-and-want-to-allow-all-origins
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.your-spotify-server-rtr.entrypoints=websecure"
-      - "traefik.http.routers.your-spotify-server-rtr.rule=Host(`spotify-server.$DOMAINNAME_1`)"
-      - "traefik.http.routers.your-spotify-server-rtr.service=your-spotify-server-svc"
-      - "traefik.http.services.your-spotify-server-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.your-spotify-server-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
-  web:
+  your_spotify_web:
     container_name: your_spotify_client
     image: yooooomi/your_spotify_client
     restart: always
@@ -34,19 +35,29 @@ services:
     environment:
       API_ENDPOINT: $API_ENDPOINT
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.your-spotify-client-rtr.entrypoints=websecure"
-      - "traefik.http.routers.your-spotify-client-rtr.rule=Host(`spotify.$DOMAINNAME_1`)"
-      - "traefik.http.routers.your-spotify-client-rtr.service=your-spotify-client-svc"
-      - "traefik.http.services.your-spotify-client-svc.loadbalancer.server.port=3000"
-      - "traefik.http.routers.your-spotify-client-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
   mongo:
-    container_name: mongo
+    container_name: your_spotify_mongo
     image: mongo:6
     volumes:
       - $DOCKERDIR/configdata/your-spotify/db:/data/db
+    restart: unless-stopped
     networks:
-      - traefik_proxy
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M

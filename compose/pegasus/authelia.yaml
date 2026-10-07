@@ -29,6 +29,7 @@ services:
       - authelia_storage_encryption_key
       - authelia_session_secret
     labels:
+      - "com.centurylinklabs.watchtower.enable=false"
       - "traefik.enable=true"
       ## HTTP Routers
       - "traefik.http.routers.authelia-rtr.entrypoints=websecure"

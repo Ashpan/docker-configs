@@ -1,5 +1,17 @@
 http:
   routers:
+    klipper-bypass-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - chain-no-auth@file  # Use no-auth chain for these files
+      rule: "Host(`klipper.{{env "DOMAINNAME_1"}}`) && (PathPrefix(`/manifest.webmanifest`) || PathPrefix(`/favicon.ico`) || PathPrefix(`/static/`) || PathPrefix(`/assets/`))"
+      service: klipper-svc
+      priority: 100  # Higher priority than the main rule
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
     klipper-rtr:
       entrypoints:
         - "websecure"

@@ -1,0 +1,45 @@
+services:
+  bill-split:
+    image: ghcr.io/ashpan/bill-split:latest
+    container_name: bill-split
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://billsplit:${BILL_SPLIT_DB_PASSWORD}@bill-split-db:5432/billsplit
+      UPLOAD_DIR: /app/uploads
+      PORT: 3000
+    volumes:
+      - bill_split_uploads:/app/uploads
+    depends_on:
+      bill-split-db:
+        condition: service_healthy
+    networks:
+      - caddy_proxy
+      - bill_split_internal
+
+  bill-split-db:
+    image: postgres:16-alpine
+    container_name: bill-split-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: billsplit
+      POSTGRES_USER: billsplit
+      POSTGRES_PASSWORD: ${BILL_SPLIT_DB_PASSWORD}
+    volumes:
+      - bill_split_db:/var/lib/postgresql/data
+    networks:
+      - bill_split_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U billsplit -d billsplit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  bill_split_uploads:
+  bill_split_db:
+
+networks:
+  caddy_proxy:
+    external: true
+  bill_split_internal:
+    driver: bridge

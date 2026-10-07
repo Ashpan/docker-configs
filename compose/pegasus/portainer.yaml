@@ -8,7 +8,7 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - $DOCKERDIR/configdata/portainer:/data
     image: portainer/portainer-ce:lts
     networks:
       - traefik_proxy

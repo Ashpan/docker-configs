@@ -33,11 +33,12 @@ include:
   # HOSTNAME=pegasus - defined in .env
 
   # CORE
-  - compose/$HOSTNAME/adguard.yaml
+    # - compose/$HOSTNAME/adguard.yaml
   - compose/$HOSTNAME/authelia.yaml
   - compose/$HOSTNAME/socket-proxy.yaml
-  - compose/$HOSTNAME/tailscale.yaml
-  - compose/$HOSTNAME/traefik.yaml
+    # - compose/$HOSTNAME/tailscale.yaml
+  - compose/$HOSTNAME/caddy.yaml
+    #  - compose/$HOSTNAME/traefik.yaml
   - compose/$HOSTNAME/watchtower.yaml
   - compose/$HOSTNAME/portainer.yaml
 
@@ -50,22 +51,35 @@ include:
   - compose/$HOSTNAME/immich.yaml
   - compose/$HOSTNAME/jellystat.yaml # need to merge into media server
   - compose/$HOSTNAME/media_server.yaml
-  - compose/$HOSTNAME/motioneye.yaml
+  - compose/$HOSTNAME/streamy-stats.yaml
+    # - compose/$HOSTNAME/motioneye.yaml
   - compose/$HOSTNAME/mvsa.yaml
   - compose/$HOSTNAME/nextcloud.yaml
-  - compose/$HOSTNAME/octoprint.yaml
+    # - compose/$HOSTNAME/octoprint.yaml
   - compose/$HOSTNAME/pastefy.yaml
   - compose/$HOSTNAME/your-spotify.yaml
-  - compose/$HOSTNAME/jira.yaml
+    # - compose/$HOSTNAME/jira.yaml
   - compose/$HOSTNAME/pdf.yaml
   - compose/$HOSTNAME/obsidian.yaml
   - compose/$HOSTNAME/github-readme.yaml
   - compose/$HOSTNAME/files.yaml
     #  - compose/$HOSTNAME/lynx.yaml
     # - compose/$HOSTNAME/windows.yaml
+  - compose/$HOSTNAME/manyfold.yaml
+  - compose/$HOSTNAME/spoolman.yaml
+  - compose/$HOSTNAME/nas-dashboard.yaml
+  - compose/$HOSTNAME/tdarr.yaml
+    #  - compose/$HOSTNAME/monitoring.yaml
+  - compose/$HOSTNAME/veld_tracker.yaml
+  # IPTV
+  - compose/$HOSTNAME/iptv.yaml
+  - compose/$HOSTNAME/ladder.yaml
+
   # BOTS
   - compose/$HOSTNAME/volleybot.yaml
   - compose/$HOSTNAME/crodiebot.yaml
-
+  - compose/$HOSTNAME/cms.yaml
   # TODO
   # money, monitoring, watchtower?
+  - compose/$HOSTNAME/bill-split.yaml
+  - compose/$HOSTNAME/affine.yaml

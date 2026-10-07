@@ -8,3 +8,31 @@ secrets/*
 appdata/traefik3/acme/acme.json
 appdata/recyclarr/secrets.yml
 appdata/traefik3/rules/pegasus/tail
+
+# Local-only docs (contains security notes; repo is public)
+CLAUDE.md
+
+# macOS junk
+.DS_Store
+._*
+
+# Runtime data, databases, caches, logs, backups
+backups/
+monitoring/
+appdata/authelia/
+appdata/cms/
+appdata/tdarr/
+appdata/file-server/
+appdata/immich-power-tools/
+appdata/nas-dashboard/
+appdata/recyclarr/logs/
+appdata/recyclarr/repositories/
+appdata/recyclarr/resources/
+appdata/recyclarr/state/
+compose/auth/certs/
+compose/auth/media/
+compose/auth/custom-templates/
+
+# Separate git repos
+enrollment-service/
+filter-service/

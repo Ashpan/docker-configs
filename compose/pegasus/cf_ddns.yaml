@@ -9,7 +9,7 @@ services:
     cap_drop: [all]
     security_opt: [no-new-privileges:true]
     environment:
-      - CF_API_TOKEN=${CF_API_TOKEN}
-      - DOMAINS=ashpanraskar.com
-      - PROXIED=true
+      - CF_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=ashpanraskar.com,jellyfin.ashpanraskar.com,iptv.ashpanraskar.com,torrent.ashpanraskar.com
+      - PROXIED=false
       - IP6_PROVIDER=none

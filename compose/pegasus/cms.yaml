@@ -1,0 +1,62 @@
+services:
+  kait-racing-cms:
+    image: ghcr.io/ashpan/kait-racing-cms:latest
+    platform: linux/amd64
+    container_name: kait-racing-cms
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URI=mongodb://mongo:27017/kait-racing-cms
+      - PAYLOAD_SECRET=${KAIT_CMS_PAYLOAD_SECRET}
+      - PAYLOAD_CONFIG_PATH=./payload.config.ts
+      - NEXT_BUILD=true
+    volumes:
+      # Mount media directory to specific host path for persistence
+      - $DOCKERDIR/appdata/cms/media:/app/media
+      # Optional: Mount uploads to host directory
+      - $DOCKERDIR/appdata/cms/uploads:/app/uploads
+    depends_on:
+      kait-racing-cms-mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - payload-network
+      - traefik_proxy
+    labels:
+      # Traefik labels for reverse proxy
+      - "traefik.enable=true"
+      - "traefik.http.routers.kait-racing-cms-rtr.entrypoints=websecure"
+      - "traefik.http.routers.kait-racing-cms-rtr.rule=Host(`kait-racing-cms.$DOMAINNAME_1`)"
+      - "traefik.http.routers.kait-racing-cms-rtr.service=kait-racing-cms-svc"
+      - "traefik.http.services.kait-racing-cms-svc.loadbalancer.server.port=3000"
+      - "traefik.http.routers.kait-racing-cms-rtr.middlewares=chain-no-auth@file"
+
+
+  kait-racing-cms-mongo:
+    image: mongo:7-jammy
+    container_name: kait-racing-cms-mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${KAIT_CMS_MONGO_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${KAIT_CMS_MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=kait-racing-cms
+    volumes:
+      # Mount MongoDB data to specific host path for persistence
+      - $DOCKERDIR/appdata/cms/mongodb:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command:
+      - --storageEngine=wiredTiger
+      - --auth
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - payload-network
+
+
+networks:
+  payload-network:
+    driver: bridge
+

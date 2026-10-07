@@ -1,0 +1,96 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - 9090:9090
+    user: "1000:1000"
+    volumes:
+      - $DOCKERDIR/configdata/monitoring/prometheus/config:/etc/prometheus
+      - $DOCKERDIR/appdata/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - $DOCKERDIR/configdata/monitoring/prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus-rtr.entrypoints=websecure"
+      - "traefik.http.routers.prometheus-rtr.rule=Host(`prometheus.$DOMAINNAME_1`)"
+      - "traefik.http.routers.prometheus-rtr.middlewares=chain-authelia@file"
+      - "traefik.http.routers.prometheus-rtr.service=prometheus-svc"
+      - "traefik.http.services.prometheus-svc.loadbalancer.server.port=9090"
+
+  grafana:
+    image: grafana/grafana-oss:main-ubuntu
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - $DOCKERDIR/configdata/monitoring/grafana:/var/lib/grafana
+    networks:
+      - monitoring
+      - traefik_proxy
+    user: "0"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.${DOMAINNAME_1}
+    depends_on:
+      - prometheus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana-rtr.entrypoints=websecure"
+      - "traefik.http.routers.grafana-rtr.rule=Host(`grafana.$DOMAINNAME_1`)"
+      - "traefik.http.routers.grafana-rtr.middlewares=chain-authelia@file"
+      - "traefik.http.routers.grafana-rtr.service=grafana-svc"
+      - "traefik.http.services.grafana-svc.loadbalancer.server.port=3000"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    networks:
+      - monitoring
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cadvisor-rtr.entrypoints=websecure"
+      - "traefik.http.routers.cadvisor-rtr.rule=Host(`cadvisor.$DOMAINNAME_1`)"
+      - "traefik.http.routers.cadvisor-rtr.middlewares=chain-authelia@file"
+      - "traefik.http.routers.cadvisor-rtr.service=cadvisor-svc"
+      - "traefik.http.services.cadvisor-svc.loadbalancer.server.port=8080"
+
+  
+networks:
+  monitoring:

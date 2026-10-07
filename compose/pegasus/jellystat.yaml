@@ -8,8 +8,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - /postgres-data:/var/lib/postgresql/data # Mounting the volume
+    restart: unless-stopped
     networks:
-      - traefik_proxy
+      - caddy_proxy
 
   jellystat:
     container_name: jellystat
@@ -24,16 +25,8 @@ services:
       - "3000:3000" #Server Port
     volumes:
       - /backup-data:/app/backend/backup-data # Mounting the volume
+    restart: unless-stopped
     depends_on:
       - jellystat-db
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellystat-rtr.entrypoints=websecure"
-      - "traefik.http.routers.jellystat-rtr.rule=Host(`jellystat.$DOMAINNAME_1`)"
-      - "traefik.http.routers.jellystat-rtr.service=jellystat-svc"
-      - "traefik.http.services.jellystat-svc.loadbalancer.server.port=3000"
-      - "traefik.http.routers.jellystat-rtr.middlewares=chain-no-auth@file"
-# networks:
-#   default:
+      - caddy_proxy

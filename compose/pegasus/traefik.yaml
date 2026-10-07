@@ -19,6 +19,15 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      # Timeout settings
+      - --entrypoints.websecure.transport.respondingTimeouts.readTimeout=3600s
+      - --entrypoints.websecure.transport.respondingTimeouts.writeTimeout=3600s
+      - --entrypoints.websecure.transport.respondingTimeouts.idleTimeout=3600s
+      - --serversTransport.forwardingTimeouts.dialTimeout=30s
+      - --serversTransport.forwardingTimeouts.responseHeaderTimeout=300s
+      - --serversTransport.forwardingTimeouts.idleConnTimeout=3600s
+
       - --api=true
       - --api.dashboard=true
       # - --api.insecure=true

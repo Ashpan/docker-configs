@@ -1,0 +1,39 @@
+services:
+  veld-app:
+    container_name: veld-app
+    image: ghcr.io/ashpan/veld-tracker:latest
+    ports:
+      - "3087:3000"
+    environment:
+      DATABASE_URL: postgres://veld:veld@veld-db:5432/veld
+      PORT: 3000
+    depends_on:
+      veld-db:
+        condition: service_healthy
+    networks:
+      - caddy_proxy
+    restart: unless-stopped
+
+  veld-db:
+    container_name: veld-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: veld
+      POSTGRES_PASSWORD: veld
+      POSTGRES_DB: veld
+    volumes:
+      - veld_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veld"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
+
+volumes:
+  veld_postgres:
+networks:
+  caddy_proxy:
+    external: true

@@ -5,3 +5,4 @@ http:
         middlewares:
           - nextcloud-middlewares-secure-headers
           - nextcloud-redirect
+          - nextcloud-limit

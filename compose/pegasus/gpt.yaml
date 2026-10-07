@@ -5,7 +5,7 @@ services:
     image: ollama/ollama:latest
     restart: unless-stopped
     networks:
-      - traefik_proxy
+      - caddy_proxy
     volumes:
       - ollama:/root/.ollama
     tty: true
@@ -31,18 +31,15 @@ services:
     environment:
       - "OLLAMA_BASE_URL=http://ollama:11434"
       - "WEBUI_SECRET_KEY="
-    extra_hosts:
-      - host.docker.internal:host-gateway
+    # extra_hosts:
+    #   - host.docker.internal:host-gateway
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gpt-rtr.entrypoints=websecure"
-      - "traefik.http.routers.gpt-rtr.rule=Host(`gpt.$DOMAINNAME_1`)"
-      - "traefik.http.routers.gpt-rtr.service=gpt-svc"
-      - "traefik.http.services.gpt-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.gpt-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
 
 volumes:
   ollama: {}
   open-webui: {}
+
+networks:
+  caddy_proxy:
+    external: true

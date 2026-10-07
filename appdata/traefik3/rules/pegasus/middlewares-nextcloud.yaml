@@ -15,10 +15,17 @@ http:
         referrerPolicy: "same-origin"
         permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), vr=()"
         customResponseHeaders:
-          X-Robots-Tag: "none" # disable search engines from indexing home server
+          X-Robots-Tag: "noindex,nofollow" # disable search engines from indexing home server
           server: "" # hide server info from visitors
     nextcloud-redirect:
       redirectRegex:
         permanent: true
         regex: "https://(.*)/.well-known/(card|cal)dav"
         replacement: "https://${1}/remote.php/dav/"
+    nextcloud-limit:
+      buffering:
+        maxRequestBodyBytes: 5368709120   # 5GB max file size
+        memRequestBodyBytes: 209715200    # Buffer only 200MB in memory
+        maxResponseBodyBytes: 5368709120  # 5GB max response
+        memResponseBodyBytes: 209715200   # Buffer only 200MB response in memory
+        retryExpression: "IsNetworkError() && Attempts() <= 2"

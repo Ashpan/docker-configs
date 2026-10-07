@@ -13,12 +13,6 @@ services:
       - DOCKER_ENABLE_SECURITY=false
       - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=false
       - LANGS=en_GB
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.stirling-pdf-rtr.entrypoints=websecure"
-      - "traefik.http.routers.stirling-pdf-rtr.rule=Host(`pdf.$DOMAINNAME_1`)"
-      - "traefik.http.routers.stirling-pdf-rtr.service=stirling-pdf-svc"
-      - "traefik.http.services.stirling-pdf-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.stirling-pdf-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy

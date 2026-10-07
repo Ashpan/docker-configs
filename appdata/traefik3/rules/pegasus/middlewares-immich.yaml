@@ -1,0 +1,10 @@
+http:
+  middlewares:
+    middlewares-immich:
+      headers:
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        customRequestHeaders:
+          X-Real-IP: ""
+          X-Forwarded-Proto: ""
+          X-Forwarded-For: ""

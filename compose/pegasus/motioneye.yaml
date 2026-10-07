@@ -1,5 +1,32 @@
 name: motioneye
 services:
+  wyze-bridge:
+    container_name: wyze-bridge
+    restart: unless-stopped
+    image: mrlt8/wyze-bridge:latest
+    networks:
+      - wyze-bridge-network
+    ports:
+      - 1935:1935 # RTMP
+      - 8554:8554 # RTSP
+      - 8888:8888 # HLS
+      - 8889:8889 #WebRTC
+      - 8189:8189/udp # WebRTC/ICE
+      - 5009:5000 # WEB-UI
+    environment:
+      # [OPTIONAL] Credentials can be set in the WebUI
+      # API Key and ID can be obtained from the wyze dev portal:
+      # https://developer-api-console.wyze.com/#/apikey/view
+      - WYZE_EMAIL=$WYZE_EMAIL
+      - WYZE_PASSWORD=$WYZE_PASSWORD
+      - API_ID=$WYZE_API_ID
+      - API_KEY=$WYZE_API_KEY
+      # [OPTIONAL] IP Address of the host to enable WebRTC e.g.,:
+      # - WB_IP=192.168.1.122
+      # WebUI and Stream authentication:
+      - WB_AUTH=false # Set to false to disable web and stream auth.
+      # WB_USERNAME=
+      # WB_PASSWORD=
   motioneye:
     image: ccrisan/motioneye:master-amd64
     container_name: motioneye
@@ -13,6 +40,7 @@ services:
       - /var/lib/motioneye:/var/lib/motioneye
     networks:
       - traefik_proxy
+      - wyze-bridge-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.motioneye-rtr.entrypoints=websecure"
@@ -20,3 +48,8 @@ services:
       - "traefik.http.routers.motioneye-rtr.service=motioneye-svc"
       - "traefik.http.services.motioneye-svc.loadbalancer.server.port=8765"
       - "traefik.http.routers.motioneye-rtr.middlewares=chain-basic-auth@file"
+
+networks:
+    wyze-bridge-network:
+        driver: bridge
+

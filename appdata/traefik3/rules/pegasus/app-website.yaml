@@ -1,0 +1,21 @@
+http:
+  routers:
+    website-rtr:
+      entrypoints:
+        - "websecure"
+      middlewares:
+        - website-middlewares-headers@file
+      rule: "Host(`{{env "DOMAINNAME_1"}}`)"
+      service: website-svc
+      tls:
+        certResolver: dns-cloudflare
+        options: tls-opts@file
+
+  services:
+    website-svc:
+      loadBalancer:
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: 100ms
+        servers:
+          - url: "https://ashpan.github.io/website/" # Use the host's IP address if Traefik runs outside the host network

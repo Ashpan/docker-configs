@@ -1,0 +1,36 @@
+services:
+  spoolman:
+    container_name: spoolman
+    image: ghcr.io/donkie/spoolman:latest
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: $DOCKERDIR/configdata/spoolman/data
+        target: /home/app/.local/share/spoolman
+    networks:
+      - caddy_proxy
+    ports:
+      - "7912:8000"
+    environment:
+      - TZ=America/Toronto
+
+  spoolman-updater:
+    container_name: spoolman-updater
+    image: marcokreeft/spoolman-updater:latest
+    ports:
+        - 8090:8080
+    environment:
+        - APPLICATION__HOMEASSISTANT__URL=http://host.docker.internal:8123
+        - APPLICATION__HOMEASSISTANT__TOKEN=${SPOOLMAN_HOMEASSITANT_TOKEN}
+        - APPLICATION__SPOOLMAN__URL=http://spoolman:8000
+        - APPLICATION__HOMEASSISTANT__TRAYENTITIES__0=sensor.p1s_ams_tray_1
+        - APPLICATION__HOMEASSISTANT__TRAYENTITIES__1=sensor.p1s_ams_tray_2
+        - APPLICATION__HOMEASSISTANT__TRAYENTITIES__2=sensor.p1s_ams_tray_3
+        - APPLICATION__HOMEASSISTANT__TRAYENTITIES__3=sensor.p1s_ams_tray_4
+        - APPLICATION__HOMEASSISTANT__EXTERNALSPOOLENTITY=sensor.p1s_external_spool_external_spool
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - caddy_proxy
+

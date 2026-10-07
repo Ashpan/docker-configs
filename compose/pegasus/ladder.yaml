@@ -1,0 +1,10 @@
+services:
+  ladder:
+    container_name: ladder
+    image: ghcr.io/everywall/ladder:latest
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
+    environment:
+      RULESET: https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml
+      FLARESOLVERR_HOST: http://flaresolverr:8191

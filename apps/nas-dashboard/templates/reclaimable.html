@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reclaimable Space</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b35;
+    --text: #e6e8ec;
+    --muted: #8b93a3;
+    --accent: #4f8cff;
+    --warn: #e0a030;
+    --danger: #e05a5a;
+    --ok: #3fbf7f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link { color: var(--accent); font-size: 0.85rem; text-decoration: none; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .callout {
+    background: #1c2230;
+    border: 1px solid #2a3550;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    color: #b8c4dc;
+    line-height: 1.5;
+  }
+  .callout code { background: #0f1115; padding: 1px 5px; border-radius: 4px; font-size: 0.82em; }
+  .summary-row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 4px; }
+  .summary-item .value { font-size: 1.6rem; font-weight: 700; }
+  .summary-item .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.8rem; color: var(--muted); margin-top: 16px; flex-wrap: wrap; gap: 8px;
+  }
+  button {
+    background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 7px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 500;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; word-break: break-word; }
+  tr:hover td { background: #1d212b; }
+  .size-cell { text-align: right; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rel-bar-track { width: 90px; height: 6px; border-radius: 4px; background: #23262f; overflow: hidden; display: inline-block; margin-left: 10px; vertical-align: middle; }
+  .rel-bar-fill { height: 100%; background: var(--warn); }
+  .empty-state { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
+  .scanning-badge { display: inline-flex; align-items: center; gap: 6px; color: var(--warn); font-weight: 500; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .path-hint { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+    <h1>Reclaimable Space</h1>
+    <a href="/" class="back-link">&larr; Back to storage overview</a>
+  </div>
+  <div class="subtitle">Items in <code>Downloads/completed</code> that qBittorrent no longer tracks AND that aren't hardlinked anywhere else (Media library etc.)</div>
+
+  <div class="panel callout">
+    A name showing up here means two things are both true: qBittorrent has stopped seeding it (removed from its torrent list),
+    and no other file on the NAS shares its data via a hardlink — so deleting it actually frees disk space, unlike most of
+    <code>Downloads/completed</code> which is hardlinked into <code>Media/</code> and would free nothing if removed.
+    This does <strong>not</strong> mean the content was successfully imported — it may simply have never been picked up by
+    Sonarr/Radarr. Check each name against your library before deleting. This page is read-only; delete manually via SSH or
+    your file manager.
+  </div>
+
+  <div class="panel" id="summary-panel">
+    <div class="summary-row">
+      <div class="summary-item">
+        <div class="value" id="total-size">—</div>
+        <div class="label">Reclaimable</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="item-count">—</div>
+        <div class="label">Candidate items</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="context-count">—</div>
+        <div class="label">Untracked of total in completed</div>
+      </div>
+    </div>
+    <div class="status-row">
+      <span id="scan-status">—</span>
+      <button id="rescan-btn" onclick="triggerRescan()">Rescan</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table>
+      <thead><tr><th>Name</th><th style="text-align:right">Reclaimable size</th></tr></thead>
+      <tbody id="items-body"></tbody>
+    </table>
+    <div class="empty-state" id="empty-state" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const fmtBytes = (b) => {
+  if (b === 0) return '0 B';
+  const units = ['B','KB','MB','GB','TB','PB'];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+  return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+};
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+async function fetchData() {
+  const res = await fetch('/api/reclaimable');
+  const s = await res.json();
+
+  const statusEl = document.getElementById('scan-status');
+  const btn = document.getElementById('rescan-btn');
+  const emptyState = document.getElementById('empty-state');
+  const body = document.getElementById('items-body');
+
+  if (!s.enabled) {
+    emptyState.style.display = 'block';
+    emptyState.textContent = 'Not configured — QBT_BACKUP_DIR / COMPLETED_DIR are not set for this container.';
+    body.innerHTML = '';
+    statusEl.textContent = 'Disabled';
+    btn.disabled = true;
+    return;
+  }
+
+  if (s.scanning) {
+    statusEl.innerHTML = '<span class="scanning-badge"><span class="dot"></span>Scanning…</span>';
+    btn.disabled = true;
+  } else {
+    btn.disabled = false;
+    if (s.last_scan_finished) {
+      const finished = new Date(s.last_scan_finished);
+      statusEl.textContent = `Last scan: ${finished.toLocaleString()} (took ${s.last_scan_duration_sec}s)` +
+        (s.last_error ? ` — error: ${s.last_error}` : '');
+    } else {
+      statusEl.textContent = 'No scan completed yet';
+    }
+  }
+
+  if (!s.has_cache) {
+    emptyState.style.display = 'block';
+    emptyState.textContent = 'No data yet — scan in progress.';
+    body.innerHTML = '';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  document.getElementById('total-size').textContent = fmtBytes(s.total_size);
+  document.getElementById('item-count').textContent = s.items.length.toLocaleString();
+  document.getElementById('context-count').textContent =
+    `${s.completed_count - s.tracked_count} / ${s.completed_count}`;
+
+  const maxSize = Math.max(1, ...s.items.map(i => i.size));
+  body.innerHTML = s.items.map(i => {
+    const pct = (i.size / maxSize) * 100;
+    return `<tr>
+      <td>${escapeHtml(i.name)}</td>
+      <td class="size-cell">${fmtBytes(i.size)}<span class="rel-bar-track"><span class="rel-bar-fill" style="width:${pct}%"></span></span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="2" style="color:var(--muted)">Nothing to reclaim right now</td></tr>';
+}
+
+async function triggerRescan() {
+  await fetch('/api/reclaimable/rescan', { method: 'POST' });
+  poll();
+}
+
+let pollTimer = null;
+async function poll() {
+  const s = await fetchData().catch(() => {});
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = setTimeout(poll, 4000);
+}
+
+poll();
+</script>
+</body>
+</html>

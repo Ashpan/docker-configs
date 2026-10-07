@@ -14,7 +14,14 @@ services:
       - NET_RAW
     environment:
       - TS_AUTHKEY=$TS_OAUTH_CLIENT_SECRET?ephemeral=false
-      - TS_EXTRA_ARGS=--advertise-tags=tag:container
+      - TS_EXTRA_ARGS=--advertise-tags=tag:container --advertise-routes=10.0.0.0/24
       - TS_STATE_DIR=/var/lib/tailscale
-    labels:
-      - "traefik.enable=false"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    oom_score_adj: -1000  # Protect from OOM killer

@@ -12,6 +12,8 @@ services:
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     # extends:
     #   file: hwaccel.transcoding.yml
     #   service: cpu # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
@@ -30,20 +32,33 @@ services:
     healthcheck:
       disable: false
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.photos-rtr.entrypoints=websecure"
-      - "traefik.http.routers.photos-rtr.rule=Host(`photos.$DOMAINNAME_1`)"
-      - "traefik.http.routers.photos-rtr.service=photos-svc"
-      - "traefik.http.services.photos-svc.loadbalancer.server.port=2283"
-      - "traefik.http.routers.photos-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   immich-machine-learning:
     container_name: immich_machine_learning
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     # For hardware acceleration, add one of -[armnn, cuda, openvino] to the image tag.
     # Example tag: ${IMMICH_VERSION:-release}-cuda
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
     # extends: # uncomment this section for hardware acceleration - see https://immich.app/docs/features/ml-hardware-acceleration
     #   file: hwaccel.ml.yml
     #   service: cpu # set to one of [armnn, cuda, openvino, openvino-wsl] for accelerated inference - use the `-wsl` version for WSL2 where applicable
@@ -55,20 +70,50 @@ services:
     healthcheck:
       disable: false
     networks:
-      - traefik_proxy
+      - caddy_proxy
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G      # ML needs more RAM
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   redis:
     container_name: immich_redis
     image: docker.io/redis:6.2-alpine@sha256:2d1463258f2764328496376f5d965f20c6a67f66ea2b06dc42af351f75248792
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     healthcheck:
       test: redis-cli ping || exit 1
     restart: always
     networks:
-      - traefik_proxy
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
   database:
     container_name: immich_postgres
     image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USERNAME}
@@ -100,7 +145,35 @@ services:
       ]
     restart: always
     networks:
-      - traefik_proxy
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  immich-power-tools:
+    container_name: immich_power_tools
+    image: ghcr.io/immich-power-tools/immich-power-tools:latest
+    env_file:
+      - $DOCKERDIR/.env
+    environment:
+      IMMICH_URL: http://immich-server:2283
+      EXTERNAL_IMMICH_URL: https://photos.ashpanraskar.com
+      DB_HOST: immich_postgres
+      DB_PORT: 5432
+      HOSTNAME: "0.0.0.0"
+    volumes:
+      - $DOCKERDIR/appdata/immich-power-tools:/app/data
+    restart: unless-stopped
+    depends_on:
+      - immich-server
+      - database
+    networks:
+      - caddy_proxy
 
 volumes:
   model-cache:

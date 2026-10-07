@@ -7,6 +7,7 @@ services:
     ports:
       - 8099:8080
     image: halverneus/static-file-server:latest
+    restart: unless-stopped
     networks:
       - traefik_proxy
     labels:

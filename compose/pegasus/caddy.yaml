@@ -1,0 +1,35 @@
+services:
+  caddy:
+    container_name: caddy
+    image: caddy:2.11
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - caddy_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - $DOCKERDIR/configdata/caddy/conf:/etc/caddy
+      - $DOCKERDIR/configdata/caddy/site:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    restart: unless-stopped
+    oom_score_adj: -1000  # Protect from OOM killer
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  caddy_proxy:
+    external: true

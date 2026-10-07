@@ -27,8 +27,9 @@ sonarr:
     # Set the URL/API Key to your actual instance
     base_url: !secret sonarr_tv_base_url
     api_key: !secret sonarr_tv_api_key
-    quality_definition:
-      type: series
+    # quality_definition intentionally removed 2026-08-31 — recyclarr's TRaSH
+    # definitions set unlimited max sizes, which caused runaway library growth.
+    # Size caps are now managed directly in Sonarr. Do not re-add.
     custom_formats:
       - trash_ids:
           # Unwanted
@@ -112,8 +113,8 @@ radarr:
   radarr_movies:
     base_url: !secret radarr_movies_base_url
     api_key: !secret radarr_movies_api_key
-    quality_definition:
-      type: movie
+    # quality_definition intentionally removed 2026-08-31 — see note above.
+    # Size caps are now managed directly in Radarr. Do not re-add.
     custom_formats:
       - trash_ids:
           - ed27ebfef2f323e964fb1f61391bcb35

@@ -6,6 +6,7 @@ http:
           - GET
           - OPTIONS
           - PUT
+          - POST
         accessControlMaxAge: 100
         hostsProxyHeaders:
           - "X-Forwarded-Host"

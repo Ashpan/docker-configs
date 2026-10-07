@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    chain-spotify:
+      chain:
+        middlewares:
+          - middlewares-rate-limit
+          - middlewares-rate-limit

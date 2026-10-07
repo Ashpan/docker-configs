@@ -1,13 +1,68 @@
 services:
+
+  ########################################################################
+  # # Jellyfin to host the media content
+  # ######################################################################
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    #    user: 1000:1000    # disabled to use intro skip plugin
+    networks:
+      - caddy_proxy
+    volumes:
+      - $DOCKERDIR/configdata/jellyfin/config:/config
+      - $DOCKERDIR/configdata/jellyfin/cache:/cache
+      - type: bind
+        source: /mnt/pegasus
+        target: /nas
+    restart: "unless-stopped"
+    ports:
+      - "8096:8096"
+    runtime: nvidia
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'        # Can use up to 4 cores
+          memory: 4G         # Max 4GB RAM
+        reservations:
+          cpus: '1.0'        # Guaranteed 1 core
+          memory: 2G         # Guaranteed 2GB
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Optional - alternative address used for autodiscovery
+    environment:
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.ashpanraskar.com
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    labels:
+      - "autoheal=true"
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8096/health && nvidia-smi > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   # ######################################################################
   # # Bittorrent Client connected via VPN
   # ######################################################################
   qbittorrent:
     container_name: qbittorrent
-    image: ghcr.io/hotio/qbittorrent
+    image: ghcr.io/hotio/qbittorrent:release-v5.1.4
     ports:
       - "8180:8080"
-    restart: on-failure
+    restart: unless-stopped
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -15,18 +70,19 @@ services:
       - TZ=$TZ
       - WEBUI_PORTS=8080/tcp,8080/udp
       - VPN_ENABLED=true
-      - VPN_CONF=wg0
+      - VPN_CONF=wg-airvpn
       - VPN_PROVIDER=generic
-      - VPN_LAN_NETWORK=192.168.68.0/24
+      - VPN_LAN_NETWORK=10.0.0.0/16,100.64.0.0/10
       - VPN_LAN_LEAK_ENABLED=false
-      - VPN_EXPOSE_PORTS_ON_LAN
       - VPN_AUTO_PORT_FORWARD=false
       - VPN_AUTO_PORT_FORWARD_TO_PORTS=
+      - VPN_PORT_REDIRECTS=23508@23508/tcp,23508@23508/udp
       - VPN_KEEP_LOCAL_DNS=false
       - VPN_FIREWALL_TYPE=auto
       - VPN_HEALTHCHECK_ENABLED=true
       - PRIVOXY_ENABLED=false
       - UNBOUND_ENABLED=false
+      - VPN_EXPOSE_PORTS_ON_LAN=23508/tcp,23508/udp
     cap_add:
       - NET_ADMIN
     sysctls:
@@ -37,14 +93,15 @@ services:
       - $DATADIR/Downloads:/downloads
       - /home/ashpan/hdd:/hdd
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.qbittorrent-rtr.entrypoints=websecure"
-      - "traefik.http.routers.qbittorrent-rtr.rule=Host(`torrent.$DOMAINNAME_1`)"
-      - "traefik.http.routers.qbittorrent-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.qbittorrent-rtr.service=qbittorrent-svc"
-      - "traefik.http.services.qbittorrent-svc.loadbalancer.server.port=8080"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # ######################################################################
   # # Flaresolverr to pass cloudflare ddos protection
@@ -61,7 +118,15 @@ services:
       - "8191:8191"
     restart: unless-stopped
     networks:
-      - traefik_proxy
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   ######################################################################
   # Prowlarr to manage indexers between the *arrs
@@ -79,14 +144,16 @@ services:
     volumes:
       - $DOCKERDIR/configdata/prowlarr:/config
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prowlarr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.prowlarr-rtr.service=prowlarr-svc"
-      - "traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696"
+      - caddy_proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ######################################################################
   # # Radarr to manage downloading movies
@@ -106,14 +173,16 @@ services:
       - $DOCKERDIR/configdata/radarr:/config
       - $DATADIR:/nas
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.radarr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.radarr-rtr.rule=Host(`radarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.radarr-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.radarr-rtr.service=radarr-svc"
-      - "traefik.http.services.radarr-svc.loadbalancer.server.port=7878"
+      - caddy_proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # ######################################################################
   # # Sonarr to manage downloading tv shows
@@ -132,66 +201,50 @@ services:
     volumes:
       - $DOCKERDIR/configdata/sonarr_tv:/config
       - $DATADIR:/nas
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.sonarr_tv-rtr.entrypoints=websecure"
-      - "traefik.http.routers.sonarr_tv-rtr.rule=Host(`sonarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.sonarr_tv-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.sonarr_tv-rtr.service=sonarr_tv-svc"
-      - "traefik.http.services.sonarr_tv-svc.loadbalancer.server.port=8989"
-
-  # # ######################################################################
-  # # # Sonarr to manage downloading anime
-  # # ######################################################################
-  # sonarr_anime:
-  #   container_name: sonarr_anime
-  #   image: ghcr.io/hotio/sonarr
-  #   ports:
-  #     - "8990:8989"
-  #   environment:
-  #     - PUID=$PUID
-  #     - PGID=$PGID
-  #     - UMASK=002
-  #     - TZ=$TZ
-  #   volumes:
-  #     - $DOCKERDIR/configdata/sonarr_anime:/config
-  #     - $DATADIR:/nas
-  #   networks:
-  #     - traefik_proxy
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.sonarr_anime-rtr.entrypoints=websecure"
-  #     - "traefik.http.routers.sonarr_anime-rtr.rule=Host(`sonarr-anime.$DOMAINNAME_1`)"
-  #     - "traefik.http.routers.sonarr_anime-rtr.middlewares=chain-no-auth@file"
-  #     - "traefik.http.routers.sonarr_anime-rtr.service=sonarr_anime-svc"
-  #     - "traefik.http.services.sonarr_anime-svc.loadbalancer.server.port=8989"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # ######################################################################
-  # # Jellyseerr to manage requesting media
+  # # Seerr (formerly Jellyseerr) to manage requesting media
+  # # Runs as the image's `node` user (UID 1000); config dir must be owned by 1000:1000
   # ######################################################################
-  jellyseerr:
-    container_name: jellyseerr
-    image: ghcr.io/hotio/jellyseerr
+  seerr:
+    container_name: seerr
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
     ports:
       - "5055:5055"
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - UMASK=002
       - TZ=$TZ
+      - PORT=5055
     volumes:
-      - $DOCKERDIR/configdata/jellyseerr:/config
+      - $DOCKERDIR/configdata/jellyseerr:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyseerr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.jellyseerr-rtr.rule=Host(`requests.$DOMAINNAME_1`)"
-      - "traefik.http.routers.jellyseerr-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.jellyseerr-rtr.service=jellyseerr-svc"
-      - "traefik.http.services.jellyseerr-svc.loadbalancer.server.port=5055"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ######################################################################
   # # Bazarr to manage downloading subtitles
@@ -210,15 +263,35 @@ services:
     volumes:
       - $DOCKERDIR/configdata/bazarr:/config
       - $DATADIR:/nas
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.bazarr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.bazarr-rtr.rule=Host(`bazarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.bazarr-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.bazarr-rtr.service=bazarr-svc"
-      - "traefik.http.services.bazarr-svc.loadbalancer.server.port=6767"
+      - caddy_proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # ######################################################################
+  # # Profilarr to manage quality profiles and custom formats for *arrs
+  # ######################################################################
+  profilarr:
+    container_name: profilarr
+    image: ghcr.io/dictionarry-hub/profilarr:latest
+    ports:
+      - "6868:6868"
+    volumes:
+      - $DOCKERDIR/configdata/profilarr:/config
+    environment:
+      - TZ=$TZ
+      - AUTH=off
+      - ORIGIN=https://profilarr.ashpanraskar.com
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
 
   # ######################################################################
   # # Recyclarr to sync quality profiles between the *arrs
@@ -228,9 +301,10 @@ services:
     container_name: recyclarr
     user: $PUID:$PGID
     networks:
-      - traefik_proxy
+      - caddy_proxy
     volumes:
       - $DOCKERDIR/appdata/recyclarr:/config
+    restart: unless-stopped
     environment:
       - TZ=$TZ
 
@@ -247,84 +321,43 @@ services:
       - PGID=$PGID
     volumes:
       - $DOCKERDIR/configdata/organizr:/config
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.organizr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.organizr-rtr.rule=Host(`organizr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.organizr-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.organizr-rtr.service=organizr-svc"
-      - "traefik.http.services.organizr-svc.loadbalancer.server.port=80"
+      - caddy_proxy
 
-  ########################################################################
-  # # Jellyfin to host the media content
   # ######################################################################
-  jellyfin:
-    image: jellyfin/jellyfin
-    container_name: jellyfin
-    #    user: 1000:1000    # disabled to use intro skip plugin
-    networks:
-      - traefik_proxy
+  # # Readarr to manage e/audio book downloads
+  # ######################################################################
+  readarr:
+    container_name: readarr 
+    image: ghcr.io/hotio/readarr 
+    ports:
+      - "8787:8787"
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
     volumes:
-      - /home/ashpan/hdd/jellyfin_data/config:/config
-      - /home/ashpan/hdd/jellyfin_data/cache:/cache
-      - type: bind
-        source: /home/ashpan/hdd
-        target: /media
-      - type: bind
-        source: /mnt/pegasus
-        target: /nas
-    restart: "unless-stopped"
-    ports:
-      - "8096:8096"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    # Optional - alternative address used for autodiscovery
-    environment:
-      - JELLYFIN_PublishedServerUrl=https://jellyfin.ashpanraskar.com
-    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin-rtr.entrypoints=websecure"
-      - "traefik.http.routers.jellyfin-rtr.rule=Host(`jellyfin.$DOMAINNAME_1`)"
-      - "traefik.http.routers.organizr-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.jellyfin-rtr.service=jellyfin-svc"
-      - "traefik.http.services.jellyfin-svc.loadbalancer.server.port=8096"
+      - $DOCKERDIR/configdata/readarr:/config
+      - $DATADIR:/nas
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
 
   ########################################################################
-  # # Unstable Jellyfin Vue client to host the media content - BETA
+  # # Streamyfin Optimized Download Server
   # ######################################################################
-  jellyfin_vue:
-    container_name: jellyfin_vue
-    image: ghcr.io/jellyfin/jellyfin-vue:unstable
-    restart: always
-    ports:
-      - 8764:80
-    environment:
-      - DEFAULT_SERVERS=jellyfin.ashpanraskar.com
-      - DISABLE_SERVER_SELECTION=1
-    networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin2-rtr.entrypoints=websecure"
-      - "traefik.http.routers.jellyfin2-rtr.rule=Host(`jellyfin2.$DOMAINNAME_1`)"
-      - "traefik.http.routers.jellyfin2-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.jellyfin2-rtr.service=jellyfin2-svc"
-      - "traefik.http.services.jellyfin2-svc.loadbalancer.server.port=80"
+  # optimized_version_server:
+  #   container_name: optimized_version_server_streamyfin
+  #   image: fredrikburmester/streamyfin-optimized-versions-server:master
+  #   restart: always
+  #   ports:
+  #     - 3008:3000
+  #   environment:
+  #     - JELLYFIN_URL=http://jellyfin:8096
+  #     - MAX_CONCURRENT_JOBS=3
+  #   networks:
+  #     - caddy_proxy
+
 
   # #####################################################################
   # # Jellyfin-auto-collections to create collections from IMDB lists
@@ -342,25 +375,49 @@ services:
       - $DOCKERDIR/configdata/auto-collections:/app/config
     restart: unless-stopped
     networks:
-      - traefik_proxy
+      - caddy_proxy
 
-  # ######################################################################
-  # # Wizarr to handle user management for jellyfin
-  # ######################################################################
-  wizarr:
-    container_name: wizarr
-    image: ghcr.io/wizarrrr/wizarr:latest
-    restart: unless-stopped
+  jfa-go:
+    container_name: jfa-go
+    image: hrfee/jfa-go
     ports:
-      - 5690:5690
+      - "8056:8056"
     volumes:
-      - $DOCKERDIR/configdata/wizarr/database:/data/database
+      - $DOCKERDIR/configdata/jfa-go/.config/jfa-go:/data  # Path to store config file and other data
+      - $DOCKERDIR/configdata/jellyfin/config:/jf          # Only needed for password resets through Jellyfin
+      - /etc/localtime:/etc/localtime:ro  # Ensures correct time
+    restart: unless-stopped  # Optional: automatically restart container
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.wizarr-rtr.entrypoints=websecure"
-      - "traefik.http.routers.wizarr-rtr.rule=Host(`wizarr.$DOMAINNAME_1`)"
-      - "traefik.http.routers.wizarr-rtr.middlewares=chain-no-auth@file"
-      - "traefik.http.routers.wizarr-rtr.service=wizarr-svc"
-      - "traefik.http.services.wizarr-svc.loadbalancer.server.port=5690"
+      - caddy_proxy
+
+  audiobookshelf:
+    container_name: audiobookshelf
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    ports:
+      - 13378:80
+    volumes:
+      - type: bind
+        source: /mnt/pegasus/Media/Books
+        target: /audiobooks
+      - $DOCKERDIR/configdata/audiobookshelf/config:/config
+      - $DOCKERDIR/configdata/audiobookshelf/metadata:/metadata
+    environment:
+      - TZ=America/Toronto
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=30
+      - AUTOHEAL_START_PERIOD=300
+
+networks:
+  caddy_proxy:
+    external: true

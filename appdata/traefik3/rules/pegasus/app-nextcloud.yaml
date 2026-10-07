@@ -19,4 +19,11 @@ http:
           flushInterval: 100ms
         servers:
           - url: "http://host.docker.internal:11000" # Use the host's IP address if Traefik runs outside the host network
+        serversTransport: nextcloud-transport
 
+  serversTransports:
+    nextcloud-transport:
+      forwardingTimeouts:
+        dialTimeout: 30s
+        responseHeaderTimeout: 300s
+        idleConnTimeout: 3600s

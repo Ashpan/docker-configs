@@ -1,0 +1,10 @@
+http:
+  middlewares:
+    website-middlewares-headers:
+      headers:
+        customRequestHeaders:
+          X-AMP-Scheme: "https"
+        customResponseHeaders:
+          X-Proxy-Buffering: "off"
+          Content-Security-Policy: "frame-ancestors 'self' https://organizr.ashpanraskar.com;"
+

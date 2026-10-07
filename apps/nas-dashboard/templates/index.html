@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAS Storage</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b35;
+    --text: #e6e8ec;
+    --muted: #8b93a3;
+    --accent: #4f8cff;
+    --warn: #e0a030;
+    --danger: #e05a5a;
+    --ok: #3fbf7f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .usage-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .usage-top .pct { font-size: 1.8rem; font-weight: 700; }
+  .usage-top .detail { color: var(--muted); font-size: 0.85rem; text-align: right; }
+  .bar-track { height: 10px; border-radius: 6px; background: #23262f; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; background: var(--ok); transition: width 0.4s ease; }
+  .bar-fill.warn { background: var(--warn); }
+  .bar-fill.danger { background: var(--danger); }
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.8rem; color: var(--muted); margin-top: 16px; flex-wrap: wrap; gap: 8px;
+  }
+  button {
+    background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 7px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 500;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .breadcrumb { display: flex; flex-wrap: wrap; gap: 4px; font-size: 0.85rem; margin-bottom: 14px; align-items: center; }
+  .breadcrumb a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr.row:hover { background: #1d212b; }
+  tr.row.dir { cursor: pointer; }
+  .name-cell { display: flex; align-items: center; gap: 8px; }
+  .icon { color: var(--muted); width: 16px; text-align: center; flex-shrink: 0; }
+  .size-cell { text-align: right; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rel-bar-track { width: 100px; height: 6px; border-radius: 4px; background: #23262f; overflow: hidden; display: inline-block; margin-left: 10px; vertical-align: middle; }
+  .rel-bar-fill { height: 100%; background: var(--accent); }
+  .more-row td { color: var(--muted); font-style: italic; font-size: 0.8rem; }
+  .empty-state { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
+  .scanning-badge {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--warn); font-weight: 500;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex; justify-content:space-between; align-items:baseline;">
+    <h1>NAS Storage</h1>
+    <a href="/reclaimable" style="color:var(--accent); font-size:0.85rem; text-decoration:none;">Reclaimable space &rarr;</a>
+  </div>
+  <div class="subtitle" id="scan-root-label">/mnt/pegasus</div>
+
+  <div class="panel">
+    <div class="usage-top">
+      <div class="pct" id="pct-used">—</div>
+      <div class="detail" id="usage-detail">loading…</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="usage-bar" style="width:0%"></div></div>
+    <div class="status-row">
+      <span id="scan-status">—</span>
+      <button id="rescan-btn" onclick="triggerRescan()">Rescan</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <table id="tree-table">
+      <thead><tr><th>Name</th><th style="text-align:right">Size</th></tr></thead>
+      <tbody id="tree-body"></tbody>
+    </table>
+    <div class="empty-state" id="empty-state" style="display:none">No data yet — scan in progress.</div>
+  </div>
+</div>
+
+<script>
+const fmtBytes = (b) => {
+  if (b === 0) return '0 B';
+  const units = ['B','KB','MB','GB','TB','PB'];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+  return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+};
+
+let currentPath = '';
+
+async function fetchStatus() {
+  const res = await fetch('/api/status');
+  const s = await res.json();
+  document.getElementById('scan-root-label').textContent = s.scan_root;
+  document.getElementById('pct-used').textContent = s.disk_percent_used + '%';
+  document.getElementById('usage-detail').textContent =
+    `${fmtBytes(s.disk_used)} used of ${fmtBytes(s.disk_total)} — ${fmtBytes(s.disk_free)} free`;
+
+  const bar = document.getElementById('usage-bar');
+  bar.style.width = s.disk_percent_used + '%';
+  bar.className = 'bar-fill' + (s.disk_percent_used > 90 ? ' danger' : s.disk_percent_used > 75 ? ' warn' : '');
+
+  const statusEl = document.getElementById('scan-status');
+  const btn = document.getElementById('rescan-btn');
+  if (s.scanning) {
+    statusEl.innerHTML = `<span class="scanning-badge"><span class="dot"></span>Scanning… (${s.files_scanned.toLocaleString()} files so far)</span>`;
+    btn.disabled = true;
+  } else {
+    btn.disabled = false;
+    if (s.last_scan_finished) {
+      const finished = new Date(s.last_scan_finished);
+      statusEl.textContent = `Last scan: ${finished.toLocaleString()} (took ${s.last_scan_duration_sec}s)` +
+        (s.last_error ? ` — error: ${s.last_error}` : '');
+    } else {
+      statusEl.textContent = 'No scan completed yet';
+    }
+  }
+  return s;
+}
+
+function renderBreadcrumb(path) {
+  const el = document.getElementById('breadcrumb');
+  const parts = path.split('/').filter(Boolean);
+  let html = `<a onclick="navigate('')">root</a>`;
+  let acc = '';
+  for (const p of parts) {
+    acc += '/' + p;
+    html += `<span class="sep">/</span><a onclick="navigate('${acc.replace(/'/g, "\\'")}')">${p}</a>`;
+  }
+  el.innerHTML = html;
+}
+
+async function loadTree(path) {
+  currentPath = path;
+  renderBreadcrumb(path);
+  const res = await fetch('/api/tree?path=' + encodeURIComponent(path));
+  const body = document.getElementById('tree-body');
+  const emptyState = document.getElementById('empty-state');
+  if (!res.ok) {
+    body.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+  const data = await res.json();
+  const maxSize = Math.max(1, ...data.children.map(c => c.size));
+  let rows = data.children.map(c => {
+    const pct = (c.size / maxSize) * 100;
+    const icon = c.is_dir ? '📁' : '📄';
+    const clickable = c.is_dir ? `onclick="navigate('${c.path.replace(/'/g, "\\'")}')"` : '';
+    return `<tr class="row ${c.is_dir ? 'dir' : ''}" ${clickable}>
+      <td><div class="name-cell"><span class="icon">${icon}</span>${escapeHtml(c.name)}
+        <span class="rel-bar-track"><span class="rel-bar-fill" style="width:${pct}%"></span></span>
+      </div></td>
+      <td class="size-cell">${fmtBytes(c.size)}</td>
+    </tr>`;
+  }).join('');
+  if (data.more_count > 0) {
+    rows += `<tr class="more-row"><td colspan="2">+ ${data.more_count} more items (${fmtBytes(data.more_size)})</td></tr>`;
+  }
+  body.innerHTML = rows || '<tr><td colspan="2" style="color:var(--muted)">Empty</td></tr>';
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function navigate(path) {
+  loadTree(path);
+}
+
+async function triggerRescan() {
+  await fetch('/api/rescan', { method: 'POST' });
+  poll();
+}
+
+let pollTimer = null;
+async function poll() {
+  const s = await fetchStatus();
+  if (pollTimer) clearTimeout(pollTimer);
+  if (s.scanning) {
+    pollTimer = setTimeout(poll, 3000);
+  } else {
+    // refresh current view once a scan completes
+    loadTree(currentPath);
+    pollTimer = setTimeout(poll, 30000);
+  }
+}
+
+loadTree('');
+poll();
+</script>
+</body>
+</html>

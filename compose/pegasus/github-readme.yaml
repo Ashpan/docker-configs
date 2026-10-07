@@ -6,15 +6,10 @@ services:
       - TOKEN=$GH_PAT
     ports:
       - 8002:8000
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gh-streak-rtr.entrypoints=websecure"
-      - "traefik.http.routers.gh-streak-rtr.rule=Host(`gh-streak.$DOMAINNAME_1`)"
-      - "traefik.http.routers.gh-streak-rtr.service=gh-streak-svc"
-      - "traefik.http.services.gh-streak-svc.loadbalancer.server.port=8000"
-      - "traefik.http.routers.gh-streak-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+
   gh-rdme-stats:
     container_name: github-readme-stats
     image: ashpan/gh-rdme-stats:latest
@@ -22,12 +17,6 @@ services:
       - PAT_1=$GH_PAT
     ports:
       - 9009:9000
+    restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gh-stats-rtr.entrypoints=websecure"
-      - "traefik.http.routers.gh-stats-rtr.rule=Host(`gh-stats.$DOMAINNAME_1`)"
-      - "traefik.http.routers.gh-stats-rtr.service=gh-stats-svc"
-      - "traefik.http.services.gh-stats-svc.loadbalancer.server.port=9000"
-      - "traefik.http.routers.gh-stats-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
