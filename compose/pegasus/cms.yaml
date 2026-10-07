@@ -20,15 +20,7 @@ services:
     restart: unless-stopped
     networks:
       - payload-network
-      - traefik_proxy
-    labels:
-      # Traefik labels for reverse proxy
-      - "traefik.enable=true"
-      - "traefik.http.routers.kait-racing-cms-rtr.entrypoints=websecure"
-      - "traefik.http.routers.kait-racing-cms-rtr.rule=Host(`kait-racing-cms.$DOMAINNAME_1`)"
-      - "traefik.http.routers.kait-racing-cms-rtr.service=kait-racing-cms-svc"
-      - "traefik.http.services.kait-racing-cms-svc.loadbalancer.server.port=3000"
-      - "traefik.http.routers.kait-racing-cms-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
 
 
   kait-racing-cms-mongo:
@@ -57,6 +49,8 @@ services:
 
 
 networks:
+  caddy_proxy:
+    external: true
   payload-network:
     driver: bridge
 

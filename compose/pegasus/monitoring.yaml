@@ -18,14 +18,7 @@ services:
       - '--web.enable-lifecycle'
     networks:
       - monitoring
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus-rtr.entrypoints=websecure"
-      - "traefik.http.routers.prometheus-rtr.rule=Host(`prometheus.$DOMAINNAME_1`)"
-      - "traefik.http.routers.prometheus-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.prometheus-rtr.service=prometheus-svc"
-      - "traefik.http.services.prometheus-svc.loadbalancer.server.port=9090"
+      - caddy_proxy
 
   grafana:
     image: grafana/grafana-oss:main-ubuntu
@@ -35,7 +28,7 @@ services:
       - $DOCKERDIR/configdata/monitoring/grafana:/var/lib/grafana
     networks:
       - monitoring
-      - traefik_proxy
+      - caddy_proxy
     user: "0"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
@@ -43,13 +36,6 @@ services:
       - GF_SERVER_ROOT_URL=https://grafana.${DOMAINNAME_1}
     depends_on:
       - prometheus
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana-rtr.entrypoints=websecure"
-      - "traefik.http.routers.grafana-rtr.rule=Host(`grafana.$DOMAINNAME_1`)"
-      - "traefik.http.routers.grafana-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.grafana-rtr.service=grafana-svc"
-      - "traefik.http.services.grafana-svc.loadbalancer.server.port=3000"
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -82,15 +68,10 @@ services:
       - /dev/kmsg
     networks:
       - monitoring
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.cadvisor-rtr.entrypoints=websecure"
-      - "traefik.http.routers.cadvisor-rtr.rule=Host(`cadvisor.$DOMAINNAME_1`)"
-      - "traefik.http.routers.cadvisor-rtr.middlewares=chain-authelia@file"
-      - "traefik.http.routers.cadvisor-rtr.service=cadvisor-svc"
-      - "traefik.http.services.cadvisor-svc.loadbalancer.server.port=8080"
+      - caddy_proxy
 
   
 networks:
+  caddy_proxy:
+    external: true
   monitoring:

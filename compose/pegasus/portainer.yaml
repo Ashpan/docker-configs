@@ -11,16 +11,13 @@ services:
       - $DOCKERDIR/configdata/portainer:/data
     image: portainer/portainer-ce:lts
     networks:
-      - traefik_proxy
+      - caddy_proxy
       - socket_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.portainer-rtr.entrypoints=websecure"
-      - "traefik.http.routers.portainer-rtr.rule=Host(`portainer.$DOMAINNAME_1`)"
-      - "traefik.http.routers.portainer-rtr.service=portainer-svc"
-      - "traefik.http.services.portainer-svc.loadbalancer.server.port=9000"
-      - "traefik.http.routers.portainer-rtr.middlewares=chain-authelia@file"
 
 volumes:
   portainer_data:
     name: portainer_data
+
+networks:
+  caddy_proxy:
+    external: true

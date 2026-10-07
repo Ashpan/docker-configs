@@ -39,17 +39,12 @@ services:
       - /etc/motioneye:/etc/motioneye
       - /var/lib/motioneye:/var/lib/motioneye
     networks:
-      - traefik_proxy
+      - caddy_proxy
       - wyze-bridge-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.motioneye-rtr.entrypoints=websecure"
-      - "traefik.http.routers.motioneye-rtr.rule=Host(`motioneye.$DOMAINNAME_1`)"
-      - "traefik.http.routers.motioneye-rtr.service=motioneye-svc"
-      - "traefik.http.services.motioneye-svc.loadbalancer.server.port=8765"
-      - "traefik.http.routers.motioneye-rtr.middlewares=chain-basic-auth@file"
 
 networks:
-    wyze-bridge-network:
-        driver: bridge
+  caddy_proxy:
+    external: true
+  wyze-bridge-network:
+    driver: bridge
 

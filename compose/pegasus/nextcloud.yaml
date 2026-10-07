@@ -17,7 +17,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     # network_mode: host
     networks:
-    #   - traefik_proxy
       - socket_proxy
 volumes:
   # If you want to store the data on a different drive, see https://github.com/nextcloud/all-in-one#how-to-store-the-filesinstallation-on-a-separate-drive

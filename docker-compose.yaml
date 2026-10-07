@@ -8,25 +8,7 @@ networks:
     ipam:
       config:
         - subnet: 192.168.91.0/24
-  traefik_proxy:
-    name: traefik_proxy
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.90.0/24
 
-########################### SECRETS
-secrets:
-  basic_auth_credentials:
-    file: $DOCKERDIR/secrets/basic_auth_credentials
-  cf_dns_api_token:
-    file: $DOCKERDIR/secrets/cf_dns_api_token
-  authelia_jwt_secret:
-    file: $DOCKERDIR/secrets/authelia_jwt_secret
-  authelia_session_secret:
-    file: $DOCKERDIR/secrets/authelia_session_secret
-  authelia_storage_encryption_key:
-    file: $DOCKERDIR/secrets/authelia_storage_encryption_key
 
 include:
   ########################### SERVICES
@@ -34,11 +16,9 @@ include:
 
   # CORE
     # - compose/$HOSTNAME/adguard.yaml
-  - compose/$HOSTNAME/authelia.yaml
   - compose/$HOSTNAME/socket-proxy.yaml
     # - compose/$HOSTNAME/tailscale.yaml
   - compose/$HOSTNAME/caddy.yaml
-    #  - compose/$HOSTNAME/traefik.yaml
   - compose/$HOSTNAME/watchtower.yaml
   - compose/$HOSTNAME/portainer.yaml
 

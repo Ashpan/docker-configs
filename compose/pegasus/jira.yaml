@@ -13,11 +13,8 @@ services:
       - $DOCKERDIR/configdata/jira/assets:/var/openproject/assets
     restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jira-rtr.entrypoints=websecure"
-      - "traefik.http.routers.jira-rtr.rule=Host(`jira.$DOMAINNAME_1`)"
-      - "traefik.http.routers.jira-rtr.service=jira-svc"
-      - "traefik.http.services.jira-svc.loadbalancer.server.port=80"
-      - "traefik.http.routers.jira-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+
+networks:
+  caddy_proxy:
+    external: true

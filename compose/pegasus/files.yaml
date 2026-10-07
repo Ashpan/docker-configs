@@ -9,11 +9,8 @@ services:
     image: halverneus/static-file-server:latest
     restart: unless-stopped
     networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.files-rtr.entrypoints=websecure"
-      - "traefik.http.routers.files-rtr.rule=Host(`files.$DOMAINNAME_1`)"
-      - "traefik.http.routers.files-rtr.service=files-svc"
-      - "traefik.http.services.files-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.files-rtr.middlewares=chain-no-auth@file"
+      - caddy_proxy
+
+networks:
+  caddy_proxy:
+    external: true
