@@ -12,6 +12,7 @@ services:
     volumes:
       - $DOCKERDIR/configdata/jellyfin/config:/config
       - $DOCKERDIR/configdata/jellyfin/cache:/cache
+      - $DATADIR/jellyfin/trickplay:/config/data/trickplay
       - type: bind
         source: /mnt/pegasus
         target: /nas
