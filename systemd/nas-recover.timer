@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for NAS-stale containers every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+
+[Install]
+WantedBy=timers.target

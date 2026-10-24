@@ -1,0 +1,15 @@
+[Unit]
+Description=Bring up docker compose stack on boot
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target remote-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ashpan/docker
+ExecStart=/usr/bin/docker compose up -d
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=multi-user.target

@@ -21,6 +21,7 @@ include:
   - compose/$HOSTNAME/caddy.yaml
   - compose/$HOSTNAME/watchtower.yaml
   - compose/$HOSTNAME/portainer.yaml
+  - compose/$HOSTNAME/heartbeat.yaml
 
   # APPS
   - compose/$HOSTNAME/chat.yaml

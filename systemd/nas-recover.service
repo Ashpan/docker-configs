@@ -1,0 +1,7 @@
+[Unit]
+Description=Restart containers that started before NAS mounts were up
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/ashpan/docker/scripts/restart-nas-containers.sh

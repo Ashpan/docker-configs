@@ -1,0 +1,10 @@
+# Dead-man's switch: pings healthchecks.io every minute. If pings stop
+# (power loss, network down, docker down), healthchecks.io sends the alert.
+services:
+  heartbeat:
+    image: curlimages/curl:latest
+    container_name: heartbeat
+    restart: unless-stopped
+    environment:
+      HEALTHCHECK_URL: ${HEALTHCHECK_URL}
+    command: sh -c 'while true; do curl -fsS -m 10 --retry 3 "$$HEALTHCHECK_URL" >/dev/null; sleep 60; done'

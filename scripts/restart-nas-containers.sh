@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Restart Docker containers whose volumes depend on NFS-mounted NAS paths.
-# Run this after a NAS comes back up (power loss, reboot, etc.) to recover
-# containers that started before the mounts were available.
+# Restart Docker containers that started before their NAS mount was available
+# (power loss, NAS booting slower than the server, etc.). Such a container
+# bound the empty local dir and never sees the NFS mount, so we check each
+# container's own mount table and restart only the stale ones.
+# Runs every minute via systemd/nas-recover.timer; safe to run by hand (as root).
 set -euo pipefail
 
 COMPOSE_DIR="/home/ashpan/docker"
@@ -26,29 +28,33 @@ mount_accessible() {
   timeout "$MOUNT_TIMEOUT" ls "$mnt" > /dev/null 2>&1
 }
 
-containers_to_restart=()
+stale=()
 
 for mnt in "${!MOUNT_CONTAINERS[@]}"; do
-  if mount_accessible "$mnt"; then
-    log "$mnt is accessible"
-    # shellcheck disable=SC2206
-    containers_to_restart+=(${MOUNT_CONTAINERS[$mnt]})
-  else
+  # A boot-time mount that failed (NAS down) is never retried on its own
+  mountpoint -q "$mnt" || timeout 30 mount "$mnt" > /dev/null 2>&1 || true
+
+  if ! mount_accessible "$mnt"; then
     warn "$mnt is NOT accessible — skipping: ${MOUNT_CONTAINERS[$mnt]}"
+    continue
   fi
+
+  fstype=$(findmnt -no FSTYPE "$mnt")
+  for c in ${MOUNT_CONTAINERS[$mnt]}; do
+    pid=$(docker inspect -f '{{.State.Pid}}' "$c" 2>/dev/null) || continue
+    [[ "$pid" -gt 0 ]] || continue  # not running; leave it alone
+    grep -q " - $fstype " "/proc/$pid/mountinfo" || stale+=("$c")
+  done
 done
 
-if [[ ${#containers_to_restart[@]} -eq 0 ]]; then
-  warn "No NAS mounts are accessible. Nothing to restart."
-  exit 1
-fi
+[[ ${#stale[@]} -eq 0 ]] && exit 0
 
 # Deduplicate
-mapfile -t containers_to_restart < <(printf '%s\n' "${containers_to_restart[@]}" | sort -u)
+mapfile -t stale < <(printf '%s\n' "${stale[@]}" | sort -u)
 
-log "Restarting ${#containers_to_restart[*]} container(s): ${containers_to_restart[*]}"
+log "Restarting ${#stale[*]} stale container(s): ${stale[*]}"
 
 cd "$COMPOSE_DIR"
-docker compose restart "${containers_to_restart[@]}"
+docker compose restart "${stale[@]}"
 
 log "Done."
