@@ -6,13 +6,11 @@
 # Runs every minute via systemd/nas-recover.timer; safe to run by hand (as root).
 set -euo pipefail
 
-COMPOSE_DIR="/home/ashpan/docker"
-
-# Map: mount point -> containers that depend on it
+# Map: mount point -> container names (not service names) that bind it
 declare -A MOUNT_CONTAINERS
 MOUNT_CONTAINERS["/mnt/pegasus"]="jellyfin qbittorrent radarr sonarr_tv bazarr audiobookshelf"
-MOUNT_CONTAINERS["/mnt/immich"]="immich-server immich-machine-learning"
-MOUNT_CONTAINERS["/mnt/nextcloud"]="nextcloud"
+MOUNT_CONTAINERS["/mnt/immich"]="immich_server"
+MOUNT_CONTAINERS["/mnt/nextcloud"]="nextcloud-aio-nextcloud"
 
 # How long (seconds) to wait for a mount to become accessible before giving up
 MOUNT_TIMEOUT=5
@@ -54,7 +52,6 @@ mapfile -t stale < <(printf '%s\n' "${stale[@]}" | sort -u)
 
 log "Restarting ${#stale[*]} stale container(s): ${stale[*]}"
 
-cd "$COMPOSE_DIR"
-docker compose restart "${stale[@]}"
+docker restart "${stale[@]}"
 
 log "Done."
