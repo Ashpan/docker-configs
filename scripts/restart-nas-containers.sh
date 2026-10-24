@@ -8,7 +8,7 @@ set -euo pipefail
 
 # Map: mount point -> container names (not service names) that bind it
 declare -A MOUNT_CONTAINERS
-MOUNT_CONTAINERS["/mnt/pegasus"]="jellyfin qbittorrent radarr sonarr_tv bazarr audiobookshelf"
+MOUNT_CONTAINERS["/mnt/pegasus"]="jellyfin qbittorrent radarr sonarr_tv bazarr audiobookshelf readarr tdarr nas-dashboard"
 MOUNT_CONTAINERS["/mnt/immich"]="immich_server"
 MOUNT_CONTAINERS["/mnt/nextcloud"]="nextcloud-aio-nextcloud"
 
