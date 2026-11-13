@@ -10,6 +10,6 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       - CF_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - DOMAINS=ashpanraskar.com,jellyfin.ashpanraskar.com,iptv.ashpanraskar.com,torrent.ashpanraskar.com
+      - DOMAINS=ashpanraskar.com,jellyfin.ashpanraskar.com,iptv.ashpanraskar.com,torrent.ashpanraskar.com,photos.ashpanraskar.com
       - PROXIED=false
       - IP6_PROVIDER=none
