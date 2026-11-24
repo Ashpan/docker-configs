@@ -1,0 +1,17 @@
+services:
+  tvdl:
+    container_name: tvdl
+    build:
+      context: $DOCKERDIR/apps/tvdl
+    environment:
+      - DATA_DIR=/data
+    volumes:
+      - $DOCKERDIR/appdata/tvdl:/data # links.json + apks/
+    ports:
+      - 8098:8080
+    networks:
+      - caddy_proxy
+    restart: unless-stopped
+networks:
+  caddy_proxy:
+    external: true

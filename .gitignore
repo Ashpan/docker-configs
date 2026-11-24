@@ -36,3 +36,4 @@ compose/auth/custom-templates/
 # Separate git repos
 enrollment-service/
 filter-service/
+appdata/tvdl/apks/

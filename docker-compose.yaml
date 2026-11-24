@@ -62,4 +62,5 @@ include:
   # TODO
   # money, monitoring, watchtower?
   - compose/$HOSTNAME/bill-split.yaml
+  - compose/$HOSTNAME/tvdl.yaml
   - compose/$HOSTNAME/affine.yaml
