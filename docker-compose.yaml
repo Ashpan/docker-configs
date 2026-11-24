@@ -50,7 +50,7 @@ include:
   - compose/$HOSTNAME/nas-dashboard.yaml
   - compose/$HOSTNAME/tdarr.yaml
     #  - compose/$HOSTNAME/monitoring.yaml
-  - compose/$HOSTNAME/veld_tracker.yaml
+  # - compose/$HOSTNAME/veld_tracker.yaml  # taken down 2026-11-16 (no auth); data kept in volume *_veld_postgres
   # IPTV
   - compose/$HOSTNAME/iptv.yaml
   - compose/$HOSTNAME/ladder.yaml
